@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AGS Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 20px; }
+    h1 { font-size: 1.4rem; font-weight: 900; color: #f59e0b; margin-bottom: 4px; }
+    .sub { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .flight-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .flight-code { font-size: 1.1rem; font-weight: 900; color: #f59e0b; }
+    .flight-count { font-size: 0.75rem; color: #64748b; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th { text-align: left; padding: 6px 10px; color: #64748b; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #334155; }
+    td { padding: 8px 10px; border-bottom: 1px solid #1e293b; }
+    tr:hover td { background: #273548; }
+    .seat { font-weight: 900; color: #e2e8f0; }
+    .time { color: #60a5fa; font-weight: 700; }
+    .score { font-weight: 900; }
+    .score.winner { color: #f59e0b; }
+    .del-btn { background: #ef4444; border: none; color: #fff; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
+    .del-btn:hover { background: #dc2626; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .flight-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; color: #e2e8f0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; width: 140px; outline: none; }
+    .btn { background: #2563eb; border: none; color: #fff; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 800; }
+    .btn:hover { background: #1d4ed8; }
+    .btn.green { background: #10b981; }
+    .btn.green:hover { background: #059669; }
+    .actual-row { background: #0f2a1a; border: 1px solid #10b981; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: none; }
+    .actual-row.show { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+    .actual-input { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; color: #e2e8f0; font-size: 0.85rem; font-weight: 700; width: 90px; outline: none; }
+    .stat { text-align: center; }
+    .stat-val { font-size: 1.3rem; font-weight: 900; color: #f59e0b; }
+    .stat-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; }
+    .empty { color: #475569; font-size: 0.85rem; padding: 12px; text-align: center; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 700; display: none; z-index: 999; }
+    .toast.show { display: block; }
+    .auth-screen { max-width: 340px; margin: 80px auto; }
+    .auth-screen input { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #e2e8f0; font-size: 1rem; margin-bottom: 12px; outline: none; }
+    .rank-1 td:first-child::before { content: '🏆 '; }
+    .rank-2 td:first-child::before { content: '🥈 '; }
+    .rank-3 td:first-child::before { content: '🥉 '; }
+  </style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen card">
+  <h1>🔐 AGS Admin</h1>
+  <p class="sub" style="margin-bottom:16px;">Enter admin key to continue</p>
+  <input type="password" id="key-input" placeholder="Admin key" onkeydown="if(event.key==='Enter')login()">
+  <button class="btn" style="width:100%" onclick="login()">Login</button>
+  <div id="auth-error" style="color:#ef4444;font-size:0.8rem;margin-top:8px;display:none;">Invalid key</div>
+</div>
+
+<div id="main" style="display:none;max-width:900px;margin:0 auto;">
+  <h1>✈️ Airport Gate Sweep — Admin</h1>
+  <div class="sub">Entries are stored in JSONBin and persist across sessions</div>
+
+  <div class="toolbar">
+    <input class="flight-input" id="flight-filter" placeholder="e.g. VA309" oninput="this.value=this.value.toUpperCase()">
+    <button class="btn" onclick="loadFlight()">Load Flight</button>
+    <button class="btn green" onclick="loadAll()">Load All</button>
+    <button class="btn" style="background:#6366f1" onclick="exportCSV()">Export CSV</button>
+  </div>
+
+  <!-- Actual times for scoring -->
+  <div id="actual-row" class="actual-row">
+    <div>
+      <div style="font-size:0.7rem;color:#64748b;margin-bottom:4px;">ACTUAL DEP</div>
+      <input class="actual-input" id="actual-dep" placeholder="09:11" oninput="recalcScores()">
+    </div>
+    <div>
+      <div style="font-size:0.7rem;color:#64748b;margin-bottom:4px;">ACTUAL ARR</div>
+      <input class="actual-input" id="actual-arr" placeholder="11:10" oninput="recalcScores()">
+    </div>
+    <div style="font-size:0.75rem;color:#64748b;margin-left:8px;">Enter actual times to calculate scores</div>
+  </div>
+
+  <div id="stats-row" style="display:none;margin-bottom:16px;" class="card">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div class="stat"><div class="stat-val" id="stat-entries">0</div><div class="stat-label">Entries</div></div>
+      <div class="stat"><div class="stat-val" id="stat-flights">0</div><div class="stat-label">Flights</div></div>
+      <div class="stat"><div class="stat-val" id="stat-winner">—</div><div class="stat-label">Current Leader</div></div>
+    </div>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  let adminKey = '';
+  let allData = {};
+  const BASE = '/.netlify/functions/api';
+
+  function login() {
+    const k = document.getElementById('key-input').value.trim();
+    adminKey = k;
+    fetch(`${BASE}/admin?key=${encodeURIComponent(k)}`)
+      .then(r => {
+        if (r.status === 403) {
+          document.getElementById('auth-error').style.display = 'block';
+          return null;
+        }
+        return r.json();
+      })
+      .then(data => {
+        if (!data) return;
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('main').style.display = 'block';
+        allData = data.flights || {};
+        renderAll(allData);
+      });
+  }
+
+  function loadAll() {
+    fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}`)
+      .then(r => r.json())
+      .then(data => {
+        allData = data.flights || {};
+        document.getElementById('flight-filter').value = '';
+        document.getElementById('actual-row').classList.remove('show');
+        renderAll(allData);
+      });
+  }
+
+  function loadFlight() {
+    const code = document.getElementById('flight-filter').value.trim().toUpperCase();
+    if (!code) { loadAll(); return; }
+    fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}&flight=${code}`)
+      .then(r => r.json())
+      .then(data => {
+        const entries = data.entries || {};
+        allData = { [code]: entries };
+        document.getElementById('actual-row').classList.add('show');
+
+        // Try to populate actual times from FlightAware
+        fetch(`${BASE}/flight/${code}`)
+          .then(r => r.json())
+          .then(fd => {
+            if (fd.actual_dep) document.getElementById('actual-dep').value = fd.actual_dep;
+            if (fd.actual_arr) document.getElementById('actual-arr').value = fd.actual_arr;
+            recalcScores();
+          }).catch(() => {});
+
+        renderAll(allData);
+      });
+  }
+
+  function timeToMins(t) {
+    if (!t || t === '--:--') return null;
+    const clean = t.replace(/^[<>]\s*/, '');
+    const parts = clean.split(':').map(Number);
+    if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+    return parts[0] * 60 + parts[1];
+  }
+
+  function recalcScores() {
+    const actualDep = document.getElementById('actual-dep').value.trim();
+    const actualArr = document.getElementById('actual-arr').value.trim();
+    renderAll(allData, actualDep, actualArr);
+  }
+
+  function renderAll(flights, actualDep, actualArr) {
+    const results = document.getElementById('results');
+    results.innerHTML = '';
+
+    let totalEntries = 0;
+    let flightCount  = 0;
+    let globalBest   = null;
+
+    for (const [code, entries] of Object.entries(flights)) {
+      const entryList = Object.entries(entries || {});
+      if (!entryList.length) continue;
+      flightCount++;
+      totalEntries += entryList.length;
+
+      // Score if actual times provided
+      const adm = timeToMins(actualDep);
+      const aam = timeToMins(actualArr);
+      let scored = entryList.map(([combo, entry]) => {
+        const e = typeof entry === 'object' ? entry : { seat: entry, dep: combo.split('|')[0], arr: combo.split('|')[1] };
+        const dm = timeToMins(e.dep);
+        const am = timeToMins(e.arr);
+        const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : null;
+        const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : null;
+        const total   = (depDiff !== null && arrDiff !== null) ? depDiff + arrDiff : null;
+        return { combo, ...e, depDiff, arrDiff, total };
+      });
+
+      if (scored.some(s => s.total !== null)) {
+        scored.sort((a, b) => (a.total ?? 9999) - (b.total ?? 9999));
+        if (!globalBest || (scored[0].total !== null && scored[0].total < (globalBest.total ?? 9999))) {
+          globalBest = { ...scored[0], flight: code };
+        }
+      }
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="flight-header">
+          <div class="flight-code">✈️ ${code}</div>
+          <div class="flight-count">${entryList.length} entr${entryList.length === 1 ? 'y' : 'ies'}</div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Seat</th>
+            <th>Dep Pick</th>
+            <th>Arr Pick</th>
+            <th>Timestamp</th>
+            ${adm !== null ? '<th>Score</th>' : ''}
+            <th>Delete</th>
+          </tr></thead>
+          <tbody id="tbody-${code}"></tbody>
+        </table>`;
+      results.appendChild(card);
+
+      const tbody = document.getElementById(`tbody-${code}`);
+      scored.forEach((e, i) => {
+        const tr = document.createElement('tr');
+        if (i < 3 && e.total !== null) tr.classList.add(`rank-${i+1}`);
+        tr.innerHTML = `
+          <td class="seat">${e.seat || '—'}</td>
+          <td class="time">${e.dep || '—'}</td>
+          <td class="time">${e.arr || '—'}</td>
+          <td style="color:#475569;font-size:0.72rem;">${e.timestamp ? new Date(e.timestamp).toLocaleString('en-AU') : '—'}</td>
+          ${adm !== null ? `<td class="score ${i===0?'winner':''}">
+            ${e.total !== null ? `${e.depDiff}m + ${e.arrDiff}m = <strong>${e.total}m</strong>` : '—'}
+          </td>` : ''}
+          <td><button class="del-btn" onclick="deleteEntry('${code}','${encodeURIComponent(e.combo)}')">Delete</button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Stats bar
+    if (totalEntries > 0) {
+      document.getElementById('stats-row').style.display = 'block';
+      document.getElementById('stat-entries').textContent = totalEntries;
+      document.getElementById('stat-flights').textContent = flightCount;
+      document.getElementById('stat-winner').textContent = globalBest ? `${globalBest.seat} (${globalBest.flight})` : '—';
+    }
+
+    if (!Object.keys(flights).length || totalEntries === 0) {
+      results.innerHTML = '<div class="empty">No entries found</div>';
+    }
+  }
+
+  function deleteEntry(code, encodedCombo) {
+    if (!confirm('Delete this entry?')) return;
+    const combo = decodeURIComponent(encodedCombo);
+    fetch(`${BASE}/admin/picks/${code}/${encodeURIComponent(combo)}?key=${encodeURIComponent(adminKey)}`, { method: 'DELETE' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) { showToast('Entry deleted'); loadAll(); }
+        else showToast('Error: ' + d.error);
+      });
+  }
+
+  function exportCSV() {
+    const rows = [['Flight','Seat','Dep Pick','Arr Pick','Timestamp']];
+    for (const [code, entries] of Object.entries(allData)) {
+      for (const [combo, entry] of Object.entries(entries)) {
+        const e = typeof entry === 'object' ? entry : { seat: entry, dep: combo.split('|')[0], arr: combo.split('|')[1], timestamp: '' };
+        rows.push([code, e.seat, e.dep, e.arr, e.timestamp || '']);
+      }
+    }
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = `AGS_entries_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    showToast('CSV downloaded');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>

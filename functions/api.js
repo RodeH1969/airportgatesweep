@@ -1,34 +1,66 @@
 const https = require('https');
 
-const FA_KEY = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
+const FA_KEY   = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
+const BIN_ID   = '69c74dc2b7ec241ddcb01bba';
+const BIN_KEY  = '$2a$10$HRueT7j9AE07wM9ms0vDWuOHzS6T.mSg8SQ.SXTvf/nz5GgxwLEne';
+const ADMIN_KEY = 'AGS2026admin';
 
-// In-memory picks — persists while the function instance is warm (hours)
-// Fine for a same-day game. { "VA309": { "09:11|11:10": "12A" } }
-const picks = {};
+// ── JSONBin helpers ──────────────────────────────────────────────
+function jsonbinGet() {
+  return new Promise((resolve) => {
+    const req = https.get({
+      hostname: 'api.jsonbin.io',
+      path: `/v3/b/${BIN_ID}/latest`,
+      headers: { 'X-Master-Key': BIN_KEY, 'X-Bin-Meta': 'false' }
+    }, (res) => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        try { resolve(JSON.parse(body)); }
+        catch(e) { resolve({ flights: {} }); }
+      });
+    });
+    req.on('error', () => resolve({ flights: {} }));
+  });
+}
 
+function jsonbinPut(data) {
+  return new Promise((resolve) => {
+    const body = JSON.stringify(data);
+    const req = https.request({
+      hostname: 'api.jsonbin.io',
+      path: `/v3/b/${BIN_ID}`,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': BIN_KEY,
+        'Content-Length': Buffer.byteLength(body)
+      }
+    }, (res) => {
+      let b = '';
+      res.on('data', c => b += c);
+      res.on('end', () => resolve(true));
+    });
+    req.on('error', () => resolve(false));
+    req.write(body);
+    req.end();
+  });
+}
+
+// ── FlightAware helper ───────────────────────────────────────────
 function fetchFA(faPath) {
   return new Promise((resolve) => {
-    const options = {
+    const req = https.get({
       hostname: 'aeroapi.flightaware.com',
       path: faPath,
       headers: { 'x-apikey': FA_KEY }
-    };
-    const req = https.get(options, (res) => {
+    }, (res) => {
       let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
-        console.log('FA response:', res.statusCode, faPath);
-        resolve({ statusCode: res.statusCode, body });
-      });
+      res.on('data', c => body += c);
+      res.on('end', () => resolve({ statusCode: res.statusCode, body }));
     });
-    req.on('error', (e) => {
-      console.error('FA network error:', e.message);
-      resolve({ statusCode: 500, body: JSON.stringify({ error: e.message }) });
-    });
-    req.setTimeout(10000, () => {
-      req.destroy();
-      resolve({ statusCode: 504, body: JSON.stringify({ error: 'FlightAware timeout' }) });
-    });
+    req.on('error', (e) => resolve({ statusCode: 500, body: JSON.stringify({ error: e.message }) }));
+    req.setTimeout(10000, () => { req.destroy(); resolve({ statusCode: 504, body: '{}' }); });
   });
 }
 
@@ -70,8 +102,7 @@ function flightStatus(fl) {
   const depTz = tzOffset(fl.origin?.timezone      || 'Australia/Brisbane');
   const arrTz = tzOffset(fl.destination?.timezone || 'Australia/Brisbane');
   return {
-    state,
-    status:        fl.status || '',
+    state, status: fl.status || '',
     actual_dep:    toLocalTime(fl.actual_out    || fl.actual_off, depTz),
     actual_arr:    toLocalTime(fl.actual_in     || fl.actual_on,  arrTz),
     scheduled_dep: toLocalTime(fl.scheduled_out || fl.scheduled_off, depTz),
@@ -81,59 +112,45 @@ function flightStatus(fl) {
   };
 }
 
-const respond = (statusCode, headers, obj) => ({
-  statusCode, headers, body: JSON.stringify(obj)
-});
+function getBestFlight(flights) {
+  const todayUTC = new Date().toISOString().slice(0, 10);
+  let fl = flights.find(f => (f.scheduled_out || f.scheduled_off || '').startsWith(todayUTC) && f.progress_percent < 100);
+  if (!fl) fl = flights.find(f => (f.progress_percent || 0) > 0 && f.progress_percent < 100);
+  if (!fl) fl = flights.find(f => f.status === 'Scheduled');
+  return fl || flights[0];
+}
 
+const respond = (statusCode, headers, obj) => ({ statusCode, headers, body: JSON.stringify(obj) });
+
+// ── Handler ──────────────────────────────────────────────────────
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin':  '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
-
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
 
   const method = event.httpMethod;
-
-  // Parse path — strip function prefix
   let p = '';
-  try {
-    const url = new URL(event.rawUrl || event.path, 'https://x.x');
-    p = url.pathname;
-  } catch(e) { p = event.path || ''; }
+  try { p = new URL(event.rawUrl || event.path, 'https://x.x').pathname; } catch(e) { p = event.path || ''; }
   p = p.replace('/.netlify/functions/api', '');
   if (!p.startsWith('/')) p = '/' + p;
-  console.log('PATH:', p, 'METHOD:', method);
+  console.log('PATH:', p, method);
 
   // ── GET /flight/VA309 ──
   const flightMatch = p.match(/^\/flight\/([A-Z0-9]+)$/i);
   if (flightMatch && method === 'GET') {
     const code = flightMatch[1].toUpperCase();
     const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(code)}?max_pages=1`);
-    if (fa.statusCode !== 200) {
-      console.error('FA error:', fa.statusCode, fa.body.substring(0,200));
-      return respond(fa.statusCode, headers, { error: `FlightAware error ${fa.statusCode}: ${fa.body.substring(0,150)}` });
-    }
-    let data;
-    try { data = JSON.parse(fa.body); } catch(e) {
-      return respond(500, headers, { error: 'Bad JSON from FlightAware' });
-    }
+    if (fa.statusCode !== 200) return respond(fa.statusCode, headers, { error: `FlightAware error ${fa.statusCode}` });
+    const data = JSON.parse(fa.body);
     const flights = data.flights || [];
-    console.log(`${flights.length} flights for ${code}`);
     if (!flights.length) return respond(404, headers, { error: 'Flight not found — check the number' });
-
-    // Pick today's flight first, then active, then scheduled, then first
-    const todayUTC = new Date().toISOString().slice(0, 10);
-    let fl = flights.find(f => (f.scheduled_out || f.scheduled_off || '').startsWith(todayUTC) && f.progress_percent < 100);
-    if (!fl) fl = flights.find(f => (f.progress_percent || 0) > 0 && f.progress_percent < 100);
-    if (!fl) fl = flights.find(f => f.status === 'Scheduled');
-    if (!fl) fl = flights[0];
-    console.log(`Using: ${fl.fa_flight_id} "${fl.status}" progress=${fl.progress_percent}%`);
-
+    const fl = getBestFlight(flights);
     return respond(200, headers, {
       code,
-      from: fl.origin?.code_iata      || fl.origin?.code      || '???',
+      from: fl.origin?.code_iata || fl.origin?.code || '???',
       to:   fl.destination?.code_iata || fl.destination?.code || '???',
       ...flightStatus(fl)
     });
@@ -144,9 +161,9 @@ exports.handler = async (event) => {
   if (statusMatch && method === 'GET') {
     const code = statusMatch[1].toUpperCase();
     const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(code)}?max_pages=1`);
-    if (fa.statusCode !== 200) return respond(fa.statusCode, headers, { error: 'FlightAware error' });
+    if (fa.statusCode !== 200) return respond(fa.statusCode, headers, { error: 'FA error' });
     const data = JSON.parse(fa.body);
-    const fl = (data.flights || [])[0] || {};
+    const fl = getBestFlight(data.flights || [{}]);
     return respond(200, headers, flightStatus(fl));
   }
 
@@ -154,7 +171,8 @@ exports.handler = async (event) => {
   const getPicksMatch = p.match(/^\/picks\/([A-Z0-9]+)$/i);
   if (getPicksMatch && method === 'GET') {
     const code = getPicksMatch[1].toUpperCase();
-    return respond(200, headers, picks[code] || {});
+    const store = await jsonbinGet();
+    return respond(200, headers, (store.flights || {})[code] || {});
   }
 
   // ── GET /picks/VA309/dep/09:11 ──
@@ -162,11 +180,12 @@ exports.handler = async (event) => {
   if (depPicksMatch && method === 'GET') {
     const code    = depPicksMatch[1].toUpperCase();
     const depTime = decodeURIComponent(depPicksMatch[2]);
-    const flightPicks = picks[code] || {};
+    const store   = await jsonbinGet();
+    const flightPicks = ((store.flights || {})[code]) || {};
     const arrTaken = {};
-    for (const [combo, seat] of Object.entries(flightPicks)) {
+    for (const [combo, entry] of Object.entries(flightPicks)) {
       const [d, a] = combo.split('|');
-      if (d === depTime) arrTaken[a] = seat;
+      if (d === depTime) arrTaken[a] = typeof entry === 'object' ? entry.seat : entry;
     }
     return respond(200, headers, arrTaken);
   }
@@ -175,16 +194,52 @@ exports.handler = async (event) => {
   const postPicksMatch = p.match(/^\/picks\/([A-Z0-9]+)$/i);
   if (postPicksMatch && method === 'POST') {
     const code = postPicksMatch[1].toUpperCase();
-    const { dep, arr, seat } = JSON.parse(event.body || '{}');
+    const { dep, arr, seat, mobile } = JSON.parse(event.body || '{}');
     if (!dep || !arr || !seat) return respond(400, headers, { error: 'Need dep, arr, seat' });
-    if (!picks[code]) picks[code] = {};
+    const store = await jsonbinGet();
+    if (!store.flights) store.flights = {};
+    if (!store.flights[code]) store.flights[code] = {};
     const combo = `${dep}|${arr}`;
-    if (picks[code][combo]) return respond(409, headers, { error: 'combo_taken', takenBy: picks[code][combo] });
-    picks[code][combo] = seat;
-    console.log(`Locked: ${code} | ${seat} → ${dep} / ${arr}`);
+    if (store.flights[code][combo]) {
+      const takenBy = store.flights[code][combo].seat || store.flights[code][combo];
+      return respond(409, headers, { error: 'combo_taken', takenBy });
+    }
+    store.flights[code][combo] = { seat, mobile: mobile || '', timestamp: new Date().toISOString(), dep, arr };
+    await jsonbinPut(store);
+    console.log(`Locked: ${code} | ${seat} → ${dep}/${arr}`);
     return respond(200, headers, { ok: true });
   }
 
-  console.log('No route matched for path:', p);
+  // ── GET /admin?key=AGS2026admin&flight=VA309 ──
+  const adminMatch = p.match(/^\/admin$/i);
+  if (adminMatch && method === 'GET') {
+    const params = new URLSearchParams(event.rawQuery || event.queryStringParameters ? new URLSearchParams(event.queryStringParameters).toString() : '');
+    const key    = (event.queryStringParameters || {}).key || '';
+    const flight = ((event.queryStringParameters || {}).flight || '').toUpperCase();
+    if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
+    const store = await jsonbinGet();
+    if (flight) {
+      return respond(200, headers, { flight, entries: (store.flights || {})[flight] || {} });
+    }
+    return respond(200, headers, { flights: store.flights || {} });
+  }
+
+  // ── DELETE /admin/picks/VA309/COMBO?key=... ──
+  const deleteMatch = p.match(/^\/admin\/picks\/([A-Z0-9]+)\/(.+)$/i);
+  if (deleteMatch && method === 'DELETE') {
+    const key   = (event.queryStringParameters || {}).key || '';
+    if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
+    const code  = deleteMatch[1].toUpperCase();
+    const combo = decodeURIComponent(deleteMatch[2]);
+    const store = await jsonbinGet();
+    if (store.flights?.[code]?.[combo]) {
+      delete store.flights[code][combo];
+      await jsonbinPut(store);
+      return respond(200, headers, { ok: true, deleted: combo });
+    }
+    return respond(404, headers, { error: 'Entry not found' });
+  }
+
+  console.log('No route matched:', p);
   return respond(404, headers, { error: 'Not found' });
 };
