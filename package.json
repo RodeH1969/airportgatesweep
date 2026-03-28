@@ -1,0 +1,7 @@
+{
+  "name": "airportgatesweep",
+  "version": "1.0.0",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
