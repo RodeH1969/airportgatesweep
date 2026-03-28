@@ -149,23 +149,16 @@
       .then(r => r.json())
       .then(data => {
         allData = { [code]: data.entries || {} };
-        renderAll(allData, null, null, code);
-
-        // Auto-fetch FlightAware status
-        fetch(`${BASE}/flight/${code}`)
-          .then(r => r.json())
-          .then(fd => {
-            const depEl = document.getElementById(`actual-dep-${code}`);
-            const arrEl = document.getElementById(`actual-arr-${code}`);
-            const stEl  = document.getElementById(`fa-status-${code}`);
-            if (depEl && fd.actual_dep) depEl.value = fd.actual_dep;
-            if (arrEl && fd.actual_arr) arrEl.value = fd.actual_arr;
-            if (stEl) {
-              stEl.textContent = fd.state || 'unknown';
-              stEl.className = `fa-status ${fd.state || 'scheduled'}`;
-            }
-            if (fd.actual_dep || fd.actual_arr) recalc(code);
-          }).catch(() => {});
+        // Load locked actuals from server into cache
+        const actuals = data.actuals || {};
+        if (actuals[code]) {
+          if (!faCache[code]) faCache[code] = {};
+          if (actuals[code].actual_dep) { faCache[code].actual_dep = actuals[code].actual_dep; faCache[code].state = 'departed'; }
+          if (actuals[code].actual_arr) { faCache[code].actual_arr = actuals[code].actual_arr; faCache[code].state = 'arrived'; }
+        }
+        const cachedDep = faCache[code]?.actual_dep || null;
+        const cachedArr = faCache[code]?.actual_arr || null;
+        renderAll(allData, cachedDep, cachedArr, code);
       });
   }
 
@@ -248,7 +241,7 @@
       <div class="flight-header">
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="flight-code">✈️ ${code}</div>
-          <span id="fa-status-${code}" class="fa-status scheduled">checking...</span>
+          <span id="fa-status-${code}" class="fa-status scheduled">—</span>
         </div>
         <div class="flight-count">${list.length} entr${list.length===1?'y':'ies'}</div>
       </div>
@@ -305,36 +298,11 @@
     if (existing) existing.replaceWith(card);
     else document.getElementById('results').appendChild(card);
 
-    // Use cached FA data if available
+    // Restore status badge from cache only — NO automatic FA calls
     const stEl = document.getElementById(`fa-status-${code}`);
-    if (stEl && faCache[code]) {
-      stEl.textContent = faCache[code].state || 'unknown';
-      stEl.className = `fa-status ${faCache[code].state || 'scheduled'}`;
-    }
-    if (stEl && stEl.textContent === 'checking...') {
-      fetch(`${BASE}/flight/${code}`)
-        .then(r => r.json())
-        .then(fd => {
-          stEl.textContent = fd.state || 'unknown';
-          stEl.className = `fa-status ${fd.state || 'scheduled'}`;
-          const depEl = document.getElementById(`actual-dep-${code}`);
-          const arrEl = document.getElementById(`actual-arr-${code}`);
-          // Only populate actual times if flight has actually departed/arrived
-          if (fd.state === 'departed' || fd.state === 'arrived') {
-            if (fd.state === 'departed' || fd.state === 'arrived') {
-            if (depEl && fd.actual_dep) depEl.value = fd.actual_dep;
-            if (arrEl && fd.actual_arr) arrEl.value = fd.actual_arr;
-            if (fd.actual_dep || fd.actual_arr) recalc(code);
-          } else {
-            if (depEl) depEl.value = '';
-            if (arrEl) arrEl.value = '';
-          }
-          } else {
-            // Clear fields — no actual times yet
-            if (depEl) depEl.value = '';
-            if (arrEl) arrEl.value = '';
-          }
-        }).catch(() => { stEl.textContent = 'unknown'; });
+    if (stEl) {
+      stEl.textContent = faCache[code]?.state || '—';
+      stEl.className = `fa-status ${faCache[code]?.state || 'scheduled'}`;
     }
   }
 
