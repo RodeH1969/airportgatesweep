@@ -100,6 +100,7 @@
 <script>
   let adminKey = '';
   let allData  = {};
+  let faCache  = {}; // cache FA data per flight so it survives re-renders
   const BASE   = '/.netlify/functions/api';
 
   function login() {
@@ -243,11 +244,11 @@
         <div class="actual-fields">
           <div class="field">
             <label>Actual Gate Dep</label>
-            <input class="actual-input" id="actual-dep-${code}" placeholder="--:--" value="${actualDep||''}" oninput="recalc('${code}')">
+            <input class="actual-input" id="actual-dep-${code}" placeholder="--:--" value="${actualDep || (faCache[code]?.actual_dep || '')}" oninput="recalc('${code}')">
           </div>
           <div class="field">
             <label>Actual Gate Arr</label>
-            <input class="actual-input" id="actual-arr-${code}" placeholder="--:--" value="${actualArr||''}" oninput="recalc('${code}')">
+            <input class="actual-input" id="actual-arr-${code}" placeholder="--:--" value="${actualArr || (faCache[code]?.actual_arr || '')}" oninput="recalc('${code}')">
           </div>
           <button class="btn green" onclick="refreshFA('${code}')">🔄 Refresh from FlightAware</button>
           <button class="btn gold" onclick="recalc('${code}')">🏆 Calculate Winner</button>
@@ -278,8 +279,12 @@
     if (existing) existing.replaceWith(card);
     else document.getElementById('results').appendChild(card);
 
-    // Fetch FA status if not already set
+    // Use cached FA data if available
     const stEl = document.getElementById(`fa-status-${code}`);
+    if (stEl && faCache[code]) {
+      stEl.textContent = faCache[code].state || 'unknown';
+      stEl.className = `fa-status ${faCache[code].state || 'scheduled'}`;
+    }
     if (stEl && stEl.textContent === 'checking...') {
       fetch(`${BASE}/flight/${code}`)
         .then(r => r.json())
