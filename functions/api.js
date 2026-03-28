@@ -118,11 +118,38 @@ function flightStatus(fl) {
 }
 
 function getBestFlight(flights) {
-  const todayUTC = new Date().toISOString().slice(0, 10);
-  let fl = flights.find(f => (f.scheduled_out || f.scheduled_off || '').startsWith(todayUTC) && f.progress_percent < 100);
-  if (!fl) fl = flights.find(f => (f.progress_percent || 0) > 0 && f.progress_percent < 100);
-  if (!fl) fl = flights.find(f => f.status === 'Scheduled');
-  return fl || flights[0];
+  const now = new Date();
+
+  // Active/in-progress flight wins immediately
+  let fl = flights.find(f => (f.progress_percent || 0) > 0 && f.progress_percent < 100);
+  if (fl) return fl;
+
+  // Find the nearest upcoming or very recent flight (within last 2 hours)
+  // Compare scheduled_out UTC timestamp to now
+  const candidates = flights.filter(f => {
+    const dep = f.scheduled_out || f.scheduled_off;
+    if (!dep) return false;
+    const depTime = new Date(dep).getTime();
+    const diffHours = (depTime - now.getTime()) / (1000 * 60 * 60);
+    // Include flights scheduled up to 24hrs in future or departed up to 2hrs ago
+    return diffHours > -2 && diffHours < 24;
+  });
+
+  if (candidates.length) {
+    // Sort by closest to now
+    candidates.sort((a, b) => {
+      const at = new Date(a.scheduled_out || a.scheduled_off).getTime();
+      const bt = new Date(b.scheduled_out || b.scheduled_off).getTime();
+      return Math.abs(at - now) - Math.abs(bt - now);
+    });
+    return candidates[0];
+  }
+
+  // Fallback: most recent scheduled
+  const scheduled = flights.find(f => f.status === 'Scheduled');
+  if (scheduled) return scheduled;
+
+  return flights[0];
 }
 
 const respond = (statusCode, headers, obj) => ({ statusCode, headers, body: JSON.stringify(obj) });
