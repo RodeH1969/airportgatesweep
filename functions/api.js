@@ -1,23 +1,60 @@
 const https = require('https');
-const { getDeployStore } = require('@netlify/blobs');
 
 const FA_KEY    = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
 const ADMIN_KEY = 'AGS2026admin';
+const GH_TOKEN  = process.env.GH_TOKEN;
+const GH_OWNER  = 'RodeH1969';
+const GH_REPO   = 'airportgatesweep';
+const GH_FILE   = 'picks.json';
 
-function getStore(context) {
-  return getDeployStore({ name: 'picks', deployID: context.deployID, siteID: context.siteID, token: context.token });
+// ── GitHub storage helpers ───────────────────────────────────────
+function ghRequest(method, path, body) {
+  return new Promise((resolve) => {
+    const payload = body ? JSON.stringify(body) : null;
+    const opts = {
+      hostname: 'api.github.com',
+      path,
+      method,
+      headers: {
+        'Authorization': `token ${GH_TOKEN}`,
+        'User-Agent': 'AirportGateSweep',
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      }
+    };
+    if (payload) opts.headers['Content-Length'] = Buffer.byteLength(payload);
+    const req = https.request(opts, (res) => {
+      let b = '';
+      res.on('data', c => b += c);
+      res.on('end', () => {
+        console.log('GH', method, path, res.statusCode);
+        try { resolve({ statusCode: res.statusCode, data: JSON.parse(b) }); }
+        catch(e) { resolve({ statusCode: res.statusCode, data: {} }); }
+      });
+    });
+    req.on('error', (e) => { console.error('GH error:', e.message); resolve({ statusCode: 500, data: {} }); });
+    if (payload) req.write(payload);
+    req.end();
+  });
 }
 
-async function loadPicks(store, code) {
-  try { return (await store.get(code, { type: 'json' })) || {}; }
-  catch(e) { console.log('loadPicks error:', e.message); return {}; }
+async function loadPicks() {
+  const r = await ghRequest('GET', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`);
+  if (r.statusCode === 404) return { flights: {}, sha: null };
+  try {
+    const content = Buffer.from(r.data.content, 'base64').toString('utf8');
+    return { ...JSON.parse(content), sha: r.data.sha };
+  } catch(e) { return { flights: {}, sha: r.data?.sha || null }; }
 }
 
-async function savePicks(store, code, picks) {
-  try { await store.setJSON(code, picks); return true; }
-  catch(e) { console.error('savePicks error:', e.message); return false; }
+async function savePicks(data, sha) {
+  const content = Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
+  const body = { message: 'update picks', content };
+  if (sha) body.sha = sha;
+  return ghRequest('PUT', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`, body);
 }
 
+// ── FlightAware ──────────────────────────────────────────────────
 function fetchFA(faPath) {
   return new Promise((resolve) => {
     const req = https.get({
@@ -90,7 +127,8 @@ function getBestFlight(flights) {
 
 const respond = (statusCode, headers, obj) => ({ statusCode, headers, body: JSON.stringify(obj) });
 
-exports.handler = async (event, context) => {
+// ── Main handler ─────────────────────────────────────────────────
+exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin':  '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -104,8 +142,6 @@ exports.handler = async (event, context) => {
   p = p.replace('/.netlify/functions/api', '');
   if (!p.startsWith('/')) p = '/' + p;
   console.log('PATH:', p, method);
-
-  const store = getStore(context);
 
   // GET /flight/VA309
   const flightMatch = p.match(/^\/flight\/([A-Z0-9]+)$/i);
@@ -140,8 +176,8 @@ exports.handler = async (event, context) => {
   const getPicksMatch = p.match(/^\/picks\/([A-Z0-9]+)$/i);
   if (getPicksMatch && method === 'GET') {
     const code = getPicksMatch[1].toUpperCase();
-    const picks = await loadPicks(store, code);
-    return respond(200, headers, picks);
+    const store = await loadPicks();
+    return respond(200, headers, (store.flights || {})[code] || {});
   }
 
   // GET /picks/VA309/dep/09:11
@@ -149,9 +185,10 @@ exports.handler = async (event, context) => {
   if (depPicksMatch && method === 'GET') {
     const code    = depPicksMatch[1].toUpperCase();
     const depTime = decodeURIComponent(depPicksMatch[2]);
-    const picks   = await loadPicks(store, code);
+    const store   = await loadPicks();
+    const flightPicks = ((store.flights || {})[code]) || {};
     const arrTaken = {};
-    for (const [combo, entry] of Object.entries(picks)) {
+    for (const [combo, entry] of Object.entries(flightPicks)) {
       const [d, a] = combo.split('|');
       if (d === depTime) arrTaken[a] = typeof entry === 'object' ? entry.seat : entry;
     }
@@ -164,15 +201,19 @@ exports.handler = async (event, context) => {
     const code = postPicksMatch[1].toUpperCase();
     const { dep, arr, seat, mobile } = JSON.parse(event.body || '{}');
     if (!dep || !arr || !seat) return respond(400, headers, { error: 'Need dep, arr, seat' });
-    const picks = await loadPicks(store, code);
+    const store = await loadPicks();
+    if (!store.flights) store.flights = {};
+    if (!store.flights[code]) store.flights[code] = {};
     const combo = `${dep}|${arr}`;
-    if (picks[combo]) {
-      const takenBy = picks[combo].seat || picks[combo];
+    if (store.flights[code][combo]) {
+      const takenBy = store.flights[code][combo].seat || store.flights[code][combo];
       return respond(409, headers, { error: 'combo_taken', takenBy });
     }
-    picks[combo] = { seat, mobile: mobile || '', timestamp: new Date().toISOString(), dep, arr };
-    const saved = await savePicks(store, code, picks);
-    console.log(`Locked: ${code} | ${seat} → ${dep}/${arr} | saved: ${saved}`);
+    store.flights[code][combo] = { seat, mobile: mobile || '', timestamp: new Date().toISOString(), dep, arr };
+    const sha = store.sha;
+    delete store.sha;
+    await savePicks(store, sha);
+    console.log(`Locked: ${code} | ${seat} → ${dep}/${arr}`);
     return respond(200, headers, { ok: true });
   }
 
@@ -182,21 +223,9 @@ exports.handler = async (event, context) => {
     const key    = (event.queryStringParameters || {}).key || '';
     const flight = ((event.queryStringParameters || {}).flight || '').toUpperCase();
     if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
-    if (flight) {
-      const picks = await loadPicks(store, flight);
-      return respond(200, headers, { flight, entries: picks });
-    }
-    // Return all flights — list all keys in store
-    try {
-      const { blobs } = await store.list();
-      const flights = {};
-      for (const blob of blobs) {
-        flights[blob.key] = await loadPicks(store, blob.key);
-      }
-      return respond(200, headers, { flights });
-    } catch(e) {
-      return respond(200, headers, { flights: {} });
-    }
+    const store = await loadPicks();
+    if (flight) return respond(200, headers, { flight, entries: (store.flights || {})[flight] || {} });
+    return respond(200, headers, { flights: store.flights || {} });
   }
 
   // DELETE /admin/picks/VA309/COMBO?key=...
@@ -206,15 +235,16 @@ exports.handler = async (event, context) => {
     if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
     const code  = deleteMatch[1].toUpperCase();
     const combo = decodeURIComponent(deleteMatch[2]);
-    const picks = await loadPicks(store, code);
-    if (picks[combo]) {
-      delete picks[combo];
-      await savePicks(store, code, picks);
-      return respond(200, headers, { ok: true, deleted: combo });
+    const store = await loadPicks();
+    if (store.flights?.[code]?.[combo]) {
+      delete store.flights[code][combo];
+      const sha = store.sha;
+      delete store.sha;
+      await savePicks(store, sha);
+      return respond(200, headers, { ok: true });
     }
     return respond(404, headers, { error: 'Entry not found' });
   }
 
-  console.log('No route matched:', p);
   return respond(404, headers, { error: 'Not found' });
 };
