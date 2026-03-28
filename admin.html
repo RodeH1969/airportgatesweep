@@ -148,7 +148,9 @@
     fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}&flight=${code}`)
       .then(r => r.json())
       .then(data => {
-        allData = { [code]: data.entries || {} };
+        const entries = data.entries || {};
+        allData = { [code]: entries };
+
         // Load locked actuals from server into cache
         const actuals = data.actuals || {};
         if (actuals[code]) {
@@ -159,6 +161,35 @@
         const cachedDep = faCache[code]?.actual_dep || null;
         const cachedArr = faCache[code]?.actual_arr || null;
         renderAll(allData, cachedDep, cachedArr, code);
+
+        // If no entries, still show the flight card with FA status
+        if (!Object.keys(entries).length) {
+          allData = { [code]: {} };
+          renderAll(allData, cachedDep, cachedArr, code);
+          document.getElementById('results').innerHTML =
+            `<div class="card" id="flight-card-${code}">
+              <div class="flight-header">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="flight-code">✈️ ${code}</div>
+                  <span id="fa-status-${code}" class="fa-status scheduled">—</span>
+                </div>
+                <div class="flight-count">0 entries</div>
+              </div>
+              <div class="actual-box">
+                <h3>📡 Actual Times — Auto-pulled from FlightAware</h3>
+                <div class="actual-fields">
+                  <div class="field"><label>Actual Gate Dep</label>
+                    <input class="actual-input" id="actual-dep-${code}" placeholder="--:--" value="${cachedDep||''}" oninput="recalc('${code}')">
+                  </div>
+                  <div class="field"><label>Actual Gate Arr</label>
+                    <input class="actual-input" id="actual-arr-${code}" placeholder="--:--" value="${cachedArr||''}" oninput="recalc('${code}')">
+                  </div>
+                  <button class="btn green" onclick="refreshFA('${code}')">🔄 Refresh from FlightAware</button>
+                </div>
+              </div>
+              <div class="empty">No entries yet for ${code}</div>
+            </div>`;
+        }
       });
   }
 

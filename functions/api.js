@@ -51,7 +51,18 @@ async function savePicks(data, sha) {
   const content = Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
   const body = { message: 'update picks', content };
   if (sha) body.sha = sha;
-  return ghRequest('PUT', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`, body);
+  const result = await ghRequest('PUT', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`, body);
+
+  // If 409 conflict (SHA mismatch), re-read and retry once
+  if (result.statusCode === 409 || result.statusCode === 422) {
+    console.log('SHA conflict on save — retrying with fresh SHA');
+    const fresh = await ghRequest('GET', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`);
+    if (fresh.data && fresh.data.sha) {
+      body.sha = fresh.data.sha;
+      return ghRequest('PUT', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`, body);
+    }
+  }
+  return result;
 }
 
 // ── FlightAware ──────────────────────────────────────────────────
