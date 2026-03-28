@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Wheels Up Wheels Down</title>
+  <title>Airport Gate Sweep</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap');
@@ -1130,11 +1130,70 @@
       const r = await fetch(`/.netlify/functions/api/status/${flightCode}`);
       if (!r.ok) return;
       const data = await r.json();
-
       if (data.state === 'departed' || data.state === 'arrived') {
         lockoutFlight(data);
       }
-    } catch(e) { /* server may not be running */ }
+    } catch(e) {}
+
+    // Also check if winner has been announced
+    try {
+      const r2 = await fetch(`/.netlify/functions/api/winner/${flightCode}`);
+      if (!r2.ok) return;
+      const wd = await r2.json();
+      if (wd.announced) showWinnerScreen(wd, flightCode);
+    } catch(e) {}
+  }
+
+  function showWinnerScreen(wd, flightCode) {
+    stopStatusPolling();
+    const w = wd.winner;
+    const isMine = locked && currentFlight && document.getElementById('bp-seat')?.textContent === w.winner?.seat;
+
+    // Build leaderboard rows
+    const rows = (w.allScores || []).map((s, i) => `
+      <tr style="${i===0?'background:rgba(245,158,11,0.1);':''}">
+        <td style="padding:6px 10px;font-size:0.9rem;">${i===0?'🏆':i===1?'🥈':i===2?'🥉':i+1}</td>
+        <td style="padding:6px 10px;font-family:Nunito,sans-serif;font-weight:900;color:${i===0?'#f59e0b':'#1e3a5f'};">${s.seat}</td>
+        <td style="padding:6px 10px;color:#2563eb;font-weight:700;">${s.dep}</td>
+        <td style="padding:6px 10px;color:#2563eb;font-weight:700;">${s.arr}</td>
+        <td style="padding:6px 10px;font-weight:${i===0?'900':'700'};color:${i===0?'#f59e0b':'#1e3a5f'};">${s.score !== null ? s.score + 'm' : '—'}</td>
+      </tr>`).join('');
+
+    // Show results on success page
+    document.getElementById('page-success').innerHTML = `
+      <div style="padding:20px;max-width:420px;margin:0 auto;">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:3rem;margin-bottom:8px;">🏆</div>
+          <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.6rem;color:#f59e0b;">
+            ${w.winner?.seat || '—'} WINS!
+          </div>
+          <div style="font-size:0.85rem;color:#64a0c8;margin-top:4px;">
+            Score: ${w.winner?.depDiff}m + ${w.winner?.arrDiff}m = <strong>${w.winner?.score} mins off</strong>
+          </div>
+          <div style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">
+            Actual dep: ${w.actualDep} · Actual arr: ${w.actualArr}
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1.5px solid #c8dff5;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(37,99,235,0.10);">
+          <table style="width:100%;border-collapse:collapse;font-size:0.8rem;color:#1e3a5f;">
+            <thead><tr style="background:#f0f7ff;">
+              <th style="padding:8px 10px;text-align:left;font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;">#</th>
+              <th style="padding:8px 10px;text-align:left;font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;">Seat</th>
+              <th style="padding:8px 10px;text-align:left;font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;">Dep</th>
+              <th style="padding:8px 10px;text-align:left;font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;">Arr</th>
+              <th style="padding:8px 10px;text-align:left;font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;">Score</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+
+        <button onclick="showPage('page-search')" style="width:100%;margin-top:16px;padding:14px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
+          Play Another Flight
+        </button>
+      </div>`;
+
+    showPage('page-success');
   }
 
   function lockoutFlight(data) {

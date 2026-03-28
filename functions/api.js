@@ -246,5 +246,28 @@ exports.handler = async (event) => {
     return respond(404, headers, { error: 'Entry not found' });
   }
 
+  // GET /winner/QF533
+  const getWinnerMatch = p.match(/^\/winner\/([A-Z0-9]+)$/i);
+  if (getWinnerMatch && method === 'GET') {
+    const code = getWinnerMatch[1].toUpperCase();
+    const store = await loadPicks();
+    const winner = (store.winners || {})[code] || null;
+    return respond(200, headers, winner ? { winner, announced: true } : { announced: false });
+  }
+
+  // POST /admin/winner
+  if (p === '/admin/winner' && method === 'POST') {
+    const body = JSON.parse(event.body || '{}');
+    if (body.key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
+    const { flight, winner, actualDep, actualArr, allScores } = body;
+    const store = await loadPicks();
+    if (!store.winners) store.winners = {};
+    store.winners[flight] = { winner, actualDep, actualArr, allScores, publishedAt: new Date().toISOString() };
+    const sha = store.sha; delete store.sha;
+    await savePicks(store, sha);
+    console.log('Winner published: ' + flight + ' seat ' + winner.seat);
+    return respond(200, headers, { ok: true });
+  }
+
   return respond(404, headers, { error: 'Not found' });
 };

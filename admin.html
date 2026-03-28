@@ -10,80 +10,85 @@
     h1 { font-size: 1.4rem; font-weight: 900; color: #f59e0b; margin-bottom: 4px; }
     .sub { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
     .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-    .flight-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .flight-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
     .flight-code { font-size: 1.1rem; font-weight: 900; color: #f59e0b; }
     .flight-count { font-size: 0.75rem; color: #64748b; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     th { text-align: left; padding: 6px 10px; color: #64748b; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #334155; }
-    td { padding: 8px 10px; border-bottom: 1px solid #1e293b; }
+    td { padding: 8px 10px; border-bottom: 1px solid #1e293b; vertical-align: middle; }
     tr:hover td { background: #273548; }
     .seat { font-weight: 900; color: #e2e8f0; }
     .time { color: #60a5fa; font-weight: 700; }
     .score { font-weight: 900; }
-    .score.winner { color: #f59e0b; }
+    .score.winner { color: #f59e0b; font-size: 1rem; }
     .del-btn { background: #ef4444; border: none; color: #fff; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
     .del-btn:hover { background: #dc2626; }
     .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
     .flight-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; color: #e2e8f0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; width: 140px; outline: none; }
-    .btn { background: #2563eb; border: none; color: #fff; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 800; }
+    .btn { background: #2563eb; border: none; color: #fff; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 800; white-space: nowrap; }
     .btn:hover { background: #1d4ed8; }
     .btn.green { background: #10b981; }
     .btn.green:hover { background: #059669; }
-    .actual-row { background: #0f2a1a; border: 1px solid #10b981; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: none; }
-    .actual-row.show { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
-    .actual-input { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; color: #e2e8f0; font-size: 0.85rem; font-weight: 700; width: 90px; outline: none; }
+    .btn.gold { background: #f59e0b; color: #000; }
+    .btn.gold:hover { background: #d97706; }
+    .btn.red { background: #ef4444; }
+    .btn.red:hover { background: #dc2626; }
+    .actual-box { background: #0f2a1a; border: 1px solid #10b981; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+    .actual-box h3 { color: #10b981; font-size: 0.85rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .actual-fields { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .actual-input { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px 12px; color: #e2e8f0; font-size: 0.95rem; font-weight: 800; width: 100px; outline: none; }
+    .winner-box { background: linear-gradient(135deg, #1a1000, #2d1f00); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin-bottom: 16px; text-align: center; display: none; }
+    .winner-box.show { display: block; }
+    .winner-trophy { font-size: 3rem; margin-bottom: 8px; }
+    .winner-name { font-size: 2rem; font-weight: 900; color: #f59e0b; }
+    .winner-score { font-size: 0.9rem; color: #94a3b8; margin-top: 4px; }
+    .winner-times { font-size: 0.8rem; color: #64748b; margin-top: 8px; }
+    .publish-row { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+    .stats-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
     .stat { text-align: center; }
     .stat-val { font-size: 1.3rem; font-weight: 900; color: #f59e0b; }
     .stat-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; }
     .empty { color: #475569; font-size: 0.85rem; padding: 12px; text-align: center; }
-    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 700; display: none; z-index: 999; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 10px 24px; border-radius: 8px; font-weight: 700; display: none; z-index: 999; font-size: 0.9rem; }
     .toast.show { display: block; }
     .auth-screen { max-width: 340px; margin: 80px auto; }
     .auth-screen input { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #e2e8f0; font-size: 1rem; margin-bottom: 12px; outline: none; }
-    .rank-1 td:first-child::before { content: '🏆 '; }
-    .rank-2 td:first-child::before { content: '🥈 '; }
-    .rank-3 td:first-child::before { content: '🥉 '; }
+    .rank-badge { display: inline-block; width: 24px; text-align: center; }
+    .fa-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .fa-status.scheduled { background: #1e3a5f; color: #60a5fa; }
+    .fa-status.departed  { background: #1a2e1a; color: #4ade80; }
+    .fa-status.arrived   { background: #1a1000; color: #f59e0b; }
+    .loading { color: #64748b; font-style: italic; font-size: 0.8rem; }
   </style>
 </head>
 <body>
 
 <div id="auth-screen" class="auth-screen card">
   <h1>🔐 AGS Admin</h1>
-  <p class="sub" style="margin-bottom:16px;">Enter admin key to continue</p>
+  <p style="color:#64748b;font-size:0.8rem;margin-bottom:16px;">Enter admin key to continue</p>
   <input type="password" id="key-input" placeholder="Admin key" onkeydown="if(event.key==='Enter')login()">
   <button class="btn" style="width:100%" onclick="login()">Login</button>
   <div id="auth-error" style="color:#ef4444;font-size:0.8rem;margin-top:8px;display:none;">Invalid key</div>
 </div>
 
-<div id="main" style="display:none;max-width:900px;margin:0 auto;">
+<div id="main" style="display:none;max-width:960px;margin:0 auto;">
   <h1>✈️ Airport Gate Sweep — Admin</h1>
-  <div class="sub">Entries are stored in JSONBin and persist across sessions</div>
+  <div class="sub">Persistent storage via GitHub · Auto-scores on arrival</div>
 
   <div class="toolbar">
-    <input class="flight-input" id="flight-filter" placeholder="e.g. VA309" oninput="this.value=this.value.toUpperCase()">
+    <input class="flight-input" id="flight-filter" placeholder="e.g. QF533" oninput="this.value=this.value.toUpperCase()">
     <button class="btn" onclick="loadFlight()">Load Flight</button>
-    <button class="btn green" onclick="loadAll()">Load All</button>
+    <button class="btn green" onclick="loadAll()">All Flights</button>
     <button class="btn" style="background:#6366f1" onclick="exportCSV()">Export CSV</button>
   </div>
 
-  <!-- Actual times for scoring -->
-  <div id="actual-row" class="actual-row">
-    <div>
-      <div style="font-size:0.7rem;color:#64748b;margin-bottom:4px;">ACTUAL DEP</div>
-      <input class="actual-input" id="actual-dep" placeholder="09:11" oninput="recalcScores()">
-    </div>
-    <div>
-      <div style="font-size:0.7rem;color:#64748b;margin-bottom:4px;">ACTUAL ARR</div>
-      <input class="actual-input" id="actual-arr" placeholder="11:10" oninput="recalcScores()">
-    </div>
-    <div style="font-size:0.75rem;color:#64748b;margin-left:8px;">Enter actual times to calculate scores</div>
-  </div>
-
-  <div id="stats-row" style="display:none;margin-bottom:16px;" class="card">
-    <div style="display:flex;gap:24px;flex-wrap:wrap;">
-      <div class="stat"><div class="stat-val" id="stat-entries">0</div><div class="stat-label">Entries</div></div>
+  <div id="stats-row" style="display:none;" class="card">
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val" id="stat-entries">0</div><div class="stat-label">Total Entries</div></div>
       <div class="stat"><div class="stat-val" id="stat-flights">0</div><div class="stat-label">Flights</div></div>
-      <div class="stat"><div class="stat-val" id="stat-winner">—</div><div class="stat-label">Current Leader</div></div>
+      <div class="stat"><div class="stat-val" id="stat-leader">—</div><div class="stat-label">Current Leader</div></div>
     </div>
   </div>
 
@@ -94,20 +99,14 @@
 
 <script>
   let adminKey = '';
-  let allData = {};
-  const BASE = '/.netlify/functions/api';
+  let allData  = {};
+  const BASE   = '/.netlify/functions/api';
 
   function login() {
     const k = document.getElementById('key-input').value.trim();
     adminKey = k;
     fetch(`${BASE}/admin?key=${encodeURIComponent(k)}`)
-      .then(r => {
-        if (r.status === 403) {
-          document.getElementById('auth-error').style.display = 'block';
-          return null;
-        }
-        return r.json();
-      })
+      .then(r => { if (r.status === 403) { document.getElementById('auth-error').style.display='block'; return null; } return r.json(); })
       .then(data => {
         if (!data) return;
         document.getElementById('auth-screen').style.display = 'none';
@@ -120,133 +119,222 @@
   function loadAll() {
     fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}`)
       .then(r => r.json())
-      .then(data => {
-        allData = data.flights || {};
-        document.getElementById('flight-filter').value = '';
-        document.getElementById('actual-row').classList.remove('show');
-        renderAll(allData);
-      });
+      .then(data => { allData = data.flights || {}; renderAll(allData); });
   }
 
   function loadFlight() {
     const code = document.getElementById('flight-filter').value.trim().toUpperCase();
     if (!code) { loadAll(); return; }
+
     fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}&flight=${code}`)
       .then(r => r.json())
       .then(data => {
-        const entries = data.entries || {};
-        allData = { [code]: entries };
-        document.getElementById('actual-row').classList.add('show');
+        allData = { [code]: data.entries || {} };
+        renderAll(allData, null, null, code);
 
-        // Try to populate actual times from FlightAware
+        // Auto-fetch FlightAware status
         fetch(`${BASE}/flight/${code}`)
           .then(r => r.json())
           .then(fd => {
-            if (fd.actual_dep) document.getElementById('actual-dep').value = fd.actual_dep;
-            if (fd.actual_arr) document.getElementById('actual-arr').value = fd.actual_arr;
-            recalcScores();
+            const depEl = document.getElementById(`actual-dep-${code}`);
+            const arrEl = document.getElementById(`actual-arr-${code}`);
+            const stEl  = document.getElementById(`fa-status-${code}`);
+            if (depEl && fd.actual_dep) depEl.value = fd.actual_dep;
+            if (arrEl && fd.actual_arr) arrEl.value = fd.actual_arr;
+            if (stEl) {
+              stEl.textContent = fd.state || 'unknown';
+              stEl.className = `fa-status ${fd.state || 'scheduled'}`;
+            }
+            if (fd.actual_dep || fd.actual_arr) recalc(code);
           }).catch(() => {});
-
-        renderAll(allData);
       });
   }
 
   function timeToMins(t) {
-    if (!t || t === '--:--') return null;
+    if (!t) return null;
     const clean = t.replace(/^[<>]\s*/, '');
     const parts = clean.split(':').map(Number);
     if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
     return parts[0] * 60 + parts[1];
   }
 
-  function recalcScores() {
-    const actualDep = document.getElementById('actual-dep').value.trim();
-    const actualArr = document.getElementById('actual-arr').value.trim();
-    renderAll(allData, actualDep, actualArr);
+  function recalc(code) {
+    const actualDep = (document.getElementById(`actual-dep-${code}`) || {}).value || '';
+    const actualArr = (document.getElementById(`actual-arr-${code}`) || {}).value || '';
+    renderFlight(code, allData[code] || {}, actualDep, actualArr);
   }
 
-  function renderAll(flights, actualDep, actualArr) {
+  function renderAll(flights, actualDep, actualArr, focusCode) {
     const results = document.getElementById('results');
     results.innerHTML = '';
-
-    let totalEntries = 0;
-    let flightCount  = 0;
-    let globalBest   = null;
+    let totalEntries = 0, flightCount = 0, globalBest = null;
 
     for (const [code, entries] of Object.entries(flights)) {
-      const entryList = Object.entries(entries || {});
-      if (!entryList.length) continue;
+      const list = Object.entries(entries || {});
+      if (!list.length) continue;
       flightCount++;
-      totalEntries += entryList.length;
-
-      // Score if actual times provided
-      const adm = timeToMins(actualDep);
-      const aam = timeToMins(actualArr);
-      let scored = entryList.map(([combo, entry]) => {
-        const e = typeof entry === 'object' ? entry : { seat: entry, dep: combo.split('|')[0], arr: combo.split('|')[1] };
-        const dm = timeToMins(e.dep);
-        const am = timeToMins(e.arr);
-        const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : null;
-        const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : null;
-        const total   = (depDiff !== null && arrDiff !== null) ? depDiff + arrDiff : null;
-        return { combo, ...e, depDiff, arrDiff, total };
-      });
-
-      if (scored.some(s => s.total !== null)) {
-        scored.sort((a, b) => (a.total ?? 9999) - (b.total ?? 9999));
-        if (!globalBest || (scored[0].total !== null && scored[0].total < (globalBest.total ?? 9999))) {
+      totalEntries += list.length;
+      const scored = scoreEntries(list, actualDep, actualArr);
+      if (scored.length && scored[0].total !== null) {
+        if (!globalBest || scored[0].total < (globalBest.total ?? 9999)) {
           globalBest = { ...scored[0], flight: code };
         }
       }
-
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="flight-header">
-          <div class="flight-code">✈️ ${code}</div>
-          <div class="flight-count">${entryList.length} entr${entryList.length === 1 ? 'y' : 'ies'}</div>
-        </div>
-        <table>
-          <thead><tr>
-            <th>Seat</th>
-            <th>Dep Pick</th>
-            <th>Arr Pick</th>
-            <th>Timestamp</th>
-            ${adm !== null ? '<th>Score</th>' : ''}
-            <th>Delete</th>
-          </tr></thead>
-          <tbody id="tbody-${code}"></tbody>
-        </table>`;
-      results.appendChild(card);
-
-      const tbody = document.getElementById(`tbody-${code}`);
-      scored.forEach((e, i) => {
-        const tr = document.createElement('tr');
-        if (i < 3 && e.total !== null) tr.classList.add(`rank-${i+1}`);
-        tr.innerHTML = `
-          <td class="seat">${e.seat || '—'}</td>
-          <td class="time">${e.dep || '—'}</td>
-          <td class="time">${e.arr || '—'}</td>
-          <td style="color:#475569;font-size:0.72rem;">${e.timestamp ? new Date(e.timestamp).toLocaleString('en-AU') : '—'}</td>
-          ${adm !== null ? `<td class="score ${i===0?'winner':''}">
-            ${e.total !== null ? `${e.depDiff}m + ${e.arrDiff}m = <strong>${e.total}m</strong>` : '—'}
-          </td>` : ''}
-          <td><button class="del-btn" onclick="deleteEntry('${code}','${encodeURIComponent(e.combo)}')">Delete</button></td>`;
-        tbody.appendChild(tr);
-      });
+      renderFlight(code, entries, focusCode === code ? actualDep : null, focusCode === code ? actualArr : null);
     }
 
-    // Stats bar
     if (totalEntries > 0) {
       document.getElementById('stats-row').style.display = 'block';
       document.getElementById('stat-entries').textContent = totalEntries;
       document.getElementById('stat-flights').textContent = flightCount;
-      document.getElementById('stat-winner').textContent = globalBest ? `${globalBest.seat} (${globalBest.flight})` : '—';
+      document.getElementById('stat-leader').textContent  = globalBest ? `${globalBest.seat}` : '—';
     }
+    if (totalEntries === 0) results.innerHTML = '<div class="empty">No entries found</div>';
+  }
 
-    if (!Object.keys(flights).length || totalEntries === 0) {
-      results.innerHTML = '<div class="empty">No entries found</div>';
+  function scoreEntries(list, actualDep, actualArr) {
+    const adm = timeToMins(actualDep);
+    const aam = timeToMins(actualArr);
+    return list.map(([combo, entry]) => {
+      const e = typeof entry === 'object' ? entry : { seat: entry, dep: combo.split('|')[0], arr: combo.split('|')[1] };
+      const dm = timeToMins(e.dep);
+      const am = timeToMins(e.arr);
+      const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : null;
+      const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : null;
+      const total   = (depDiff !== null && arrDiff !== null) ? depDiff + arrDiff : null;
+      return { combo, ...e, depDiff, arrDiff, total };
+    }).sort((a, b) => (a.total ?? 9999) - (b.total ?? 9999));
+  }
+
+  function renderFlight(code, entries, actualDep, actualArr) {
+    const existing = document.getElementById(`flight-card-${code}`);
+    const list = Object.entries(entries || {});
+    const scored = scoreEntries(list, actualDep, actualArr);
+    const hasScores = scored.some(s => s.total !== null);
+    const winner = hasScores ? scored[0] : null;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = `flight-card-${code}`;
+
+    card.innerHTML = `
+      <div class="flight-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="flight-code">✈️ ${code}</div>
+          <span id="fa-status-${code}" class="fa-status scheduled">checking...</span>
+        </div>
+        <div class="flight-count">${list.length} entr${list.length===1?'y':'ies'}</div>
+      </div>
+
+      <!-- Winner box -->
+      <div id="winner-box-${code}" class="winner-box ${winner ? 'show' : ''}">
+        <div class="winner-trophy">🏆</div>
+        <div class="winner-name">Seat ${winner?.seat || '—'}</div>
+        <div class="winner-score">${winner?.total !== null && winner?.total !== undefined ? `Score: ${winner.depDiff}m + ${winner.arrDiff}m = ${winner.total} mins off` : ''}</div>
+        <div class="winner-times">Actual dep: ${actualDep || '—'} · Actual arr: ${actualArr || '—'}</div>
+        <div class="publish-row">
+          <button class="btn gold" onclick="publishWinner('${code}')">📢 Publish Winner to Players</button>
+        </div>
+      </div>
+
+      <!-- Actual times -->
+      <div class="actual-box">
+        <h3>📡 Actual Times — Auto-pulled from FlightAware</h3>
+        <div class="actual-fields">
+          <div class="field">
+            <label>Actual Gate Dep</label>
+            <input class="actual-input" id="actual-dep-${code}" placeholder="09:11" value="${actualDep||''}" oninput="recalc('${code}')">
+          </div>
+          <div class="field">
+            <label>Actual Gate Arr</label>
+            <input class="actual-input" id="actual-arr-${code}" placeholder="11:10" value="${actualArr||''}" oninput="recalc('${code}')">
+          </div>
+          <button class="btn green" onclick="refreshFA('${code}')">🔄 Refresh from FlightAware</button>
+          <button class="btn gold" onclick="recalc('${code}')">🏆 Calculate Winner</button>
+        </div>
+      </div>
+
+      <!-- Leaderboard -->
+      <table>
+        <thead><tr>
+          <th>#</th><th>Seat</th><th>Dep Pick</th><th>Arr Pick</th><th>Time</th>
+          ${hasScores ? '<th>Score</th>' : ''}
+          <th>Delete</th>
+        </tr></thead>
+        <tbody id="tbody-${code}">
+        ${scored.map((e, i) => `
+          <tr>
+            <td><span class="rank-badge">${i===0&&hasScores?'🏆':i===1&&hasScores?'🥈':i===2&&hasScores?'🥉':i+1}</span></td>
+            <td class="seat">${e.seat||'—'}</td>
+            <td class="time">${e.dep||'—'}</td>
+            <td class="time">${e.arr||'—'}</td>
+            <td style="color:#475569;font-size:0.72rem;">${e.timestamp ? new Date(e.timestamp).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+            ${hasScores ? `<td class="score ${i===0?'winner':''}">${e.total!==null?`${e.depDiff}m + ${e.arrDiff}m = <strong>${e.total}m</strong>`:'—'}</td>` : ''}
+            <td><button class="del-btn" onclick="deleteEntry('${code}','${encodeURIComponent(e.combo)}')">✕</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+
+    if (existing) existing.replaceWith(card);
+    else document.getElementById('results').appendChild(card);
+
+    // Fetch FA status if not already set
+    const stEl = document.getElementById(`fa-status-${code}`);
+    if (stEl && stEl.textContent === 'checking...') {
+      fetch(`${BASE}/flight/${code}`)
+        .then(r => r.json())
+        .then(fd => {
+          stEl.textContent = fd.state || 'unknown';
+          stEl.className = `fa-status ${fd.state || 'scheduled'}`;
+          const depEl = document.getElementById(`actual-dep-${code}`);
+          const arrEl = document.getElementById(`actual-arr-${code}`);
+          if (depEl && fd.actual_dep && !depEl.value) depEl.value = fd.actual_dep;
+          if (arrEl && fd.actual_arr && !arrEl.value) arrEl.value = fd.actual_arr;
+          if (fd.actual_dep || fd.actual_arr) recalc(code);
+        }).catch(() => { stEl.textContent = 'unknown'; });
     }
+  }
+
+  function refreshFA(code) {
+    const stEl = document.getElementById(`fa-status-${code}`);
+    if (stEl) { stEl.textContent = 'loading...'; stEl.className = 'fa-status scheduled'; }
+    fetch(`${BASE}/flight/${code}`)
+      .then(r => r.json())
+      .then(fd => {
+        if (stEl) { stEl.textContent = fd.state || 'unknown'; stEl.className = `fa-status ${fd.state||'scheduled'}`; }
+        const depEl = document.getElementById(`actual-dep-${code}`);
+        const arrEl = document.getElementById(`actual-arr-${code}`);
+        if (depEl && fd.actual_dep) depEl.value = fd.actual_dep;
+        if (arrEl && fd.actual_arr) arrEl.value = fd.actual_arr;
+        recalc(code);
+        showToast(`FlightAware updated — status: ${fd.state}`);
+      }).catch(() => showToast('Could not reach FlightAware'));
+  }
+
+  async function publishWinner(code) {
+    const depEl = document.getElementById(`actual-dep-${code}`);
+    const arrEl = document.getElementById(`actual-arr-${code}`);
+    const actualDep = depEl?.value || '';
+    const actualArr = arrEl?.value || '';
+    const entries = Object.entries(allData[code] || {});
+    const scored  = scoreEntries(entries, actualDep, actualArr);
+    if (!scored.length || scored[0].total === null) { showToast('Calculate scores first'); return; }
+    const winner = scored[0];
+
+    const r = await fetch(`${BASE}/admin/winner`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        key: adminKey,
+        flight: code,
+        winner: { seat: winner.seat, dep: winner.dep, arr: winner.arr, score: winner.total, depDiff: winner.depDiff, arrDiff: winner.arrDiff },
+        actualDep, actualArr,
+        allScores: scored.map(s => ({ seat: s.seat, dep: s.dep, arr: s.arr, score: s.total, depDiff: s.depDiff, arrDiff: s.arrDiff }))
+      })
+    });
+    const d = await r.json();
+    if (d.ok) showToast(`🏆 Winner published! Players will see results.`);
+    else showToast('Error: ' + d.error);
   }
 
   function deleteEntry(code, encodedCombo) {
@@ -254,10 +342,7 @@
     const combo = decodeURIComponent(encodedCombo);
     fetch(`${BASE}/admin/picks/${code}/${encodeURIComponent(combo)}?key=${encodeURIComponent(adminKey)}`, { method: 'DELETE' })
       .then(r => r.json())
-      .then(d => {
-        if (d.ok) { showToast('Entry deleted'); loadAll(); }
-        else showToast('Error: ' + d.error);
-      });
+      .then(d => { if (d.ok) { showToast('Deleted'); loadFlight(); } else showToast('Error: ' + d.error); });
   }
 
   function exportCSV() {
@@ -265,13 +350,13 @@
     for (const [code, entries] of Object.entries(allData)) {
       for (const [combo, entry] of Object.entries(entries)) {
         const e = typeof entry === 'object' ? entry : { seat: entry, dep: combo.split('|')[0], arr: combo.split('|')[1], timestamp: '' };
-        rows.push([code, e.seat, e.dep, e.arr, e.timestamp || '']);
+        rows.push([code, e.seat, e.dep, e.arr, e.timestamp||'']);
       }
     }
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-    a.download = `AGS_entries_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `AGS_${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
     showToast('CSV downloaded');
   }
@@ -280,7 +365,7 @@
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+    setTimeout(() => t.classList.remove('show'), 3000);
   }
 </script>
 </body>
