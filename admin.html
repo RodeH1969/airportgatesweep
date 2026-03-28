@@ -168,8 +168,11 @@
   }
 
   function recalc(code) {
-    const actualDep = (document.getElementById(`actual-dep-${code}`) || {}).value || '';
-    const actualArr = (document.getElementById(`actual-arr-${code}`) || {}).value || '';
+    const depEl = document.getElementById(`actual-dep-${code}`);
+    const arrEl = document.getElementById(`actual-arr-${code}`);
+    // Read from field first, fall back to FA cache
+    const actualDep = (depEl && depEl.value) || (faCache[code]?.actual_dep) || '';
+    const actualArr = (arrEl && arrEl.value) || (faCache[code]?.actual_arr) || '';
     renderFlight(code, allData[code] || {}, actualDep, actualArr);
   }
 
@@ -189,7 +192,12 @@
           globalBest = { ...scored[0], flight: code };
         }
       }
-      renderFlight(code, entries, focusCode === code ? actualDep : null, focusCode === code ? actualArr : null);
+      const cachedDep = faCache[code]?.actual_dep || null;
+      const cachedArr = faCache[code]?.actual_arr || null;
+      renderFlight(code, entries,
+        (focusCode === code ? actualDep : null) || cachedDep,
+        (focusCode === code ? actualArr : null) || cachedArr
+      );
     }
 
     if (totalEntries > 0) {
