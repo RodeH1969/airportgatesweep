@@ -1667,7 +1667,28 @@
     btn.disabled = !(boardingPassVerified && bpMobileValid);
   }
 
-  function submitEntry() {
+  async function submitEntry() {
+    // Collect mobile and boarding pass now (user has filled them in)
+    const mobileRaw = document.getElementById('bp-mobile-input').value.trim();
+    const mobile = mobileRaw ? '+61' + mobileRaw : '';
+
+    let boardingPass = null;
+    const bpPreview = document.getElementById('bp-preview');
+    if (bpPreview && bpPreview.src && bpPreview.src.startsWith('data:')) {
+      boardingPass = bpPreview.src;
+    }
+
+    // Update the existing entry with mobile + boarding pass
+    if (mobile || boardingPass) {
+      try {
+        await fetch(`/.netlify/functions/api/picks/${currentFlight.code}/update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dep: myDep, arr: myArr, seat: document.getElementById('bp-seat').textContent.trim(), mobile, boardingPass })
+        });
+      } catch(e) { console.error('Update error:', e); }
+    }
+
     showPage('page-success');
   }
 
