@@ -1,57 +1,23 @@
 const https = require('https');
+const { getDeployStore } = require('@netlify/blobs');
 
-const FA_KEY   = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
-const BIN_ID   = '69c74dc2b7ec241ddcb01bba';
-const BIN_KEY  = '$2a$10$HRueT7j9AE07wM9ms0vDWuOHzS6T.mSg8SQ.SXTvf/nz5GgxwLEne';
+const FA_KEY    = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
 const ADMIN_KEY = 'AGS2026admin';
 
-// ── JSONBin helpers ──────────────────────────────────────────────
-function jsonbinGet() {
-  return new Promise((resolve) => {
-    const req = https.get({
-      hostname: 'api.jsonbin.io',
-      path: `/v3/b/${BIN_ID}/latest`,
-      headers: { 'X-Master-Key': BIN_KEY, 'X-Bin-Meta': 'false' }
-    }, (res) => {
-      let body = '';
-      res.on('data', c => body += c);
-      res.on('end', () => {
-        console.log('JSONBin GET status:', res.statusCode, 'body:', body.substring(0, 200));
-        try { resolve(JSON.parse(body)); }
-        catch(e) { console.error('JSONBin parse error:', e.message); resolve({ flights: {} }); }
-      });
-    });
-    req.on('error', (e) => { console.error('JSONBin GET error:', e.message); resolve({ flights: {} }); });
-  });
+function getStore(context) {
+  return getDeployStore({ name: 'picks', deployID: context.deployID, siteID: context.siteID, token: context.token });
 }
 
-function jsonbinPut(data) {
-  return new Promise((resolve) => {
-    const body = JSON.stringify(data);
-    const req = https.request({
-      hostname: 'api.jsonbin.io',
-      path: `/v3/b/${BIN_ID}`,
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': BIN_KEY,
-        'Content-Length': Buffer.byteLength(body)
-      }
-    }, (res) => {
-      let b = '';
-      res.on('data', c => b += c);
-      res.on('end', () => {
-        console.log('JSONBin PUT status:', res.statusCode, 'body:', b.substring(0, 200));
-        resolve(res.statusCode === 200);
-      });
-    });
-    req.on('error', (e) => { console.error('JSONBin PUT error:', e.message); resolve(false); });
-    req.write(body);
-    req.end();
-  });
+async function loadPicks(store, code) {
+  try { return (await store.get(code, { type: 'json' })) || {}; }
+  catch(e) { console.log('loadPicks error:', e.message); return {}; }
 }
 
-// ── FlightAware helper ───────────────────────────────────────────
+async function savePicks(store, code, picks) {
+  try { await store.setJSON(code, picks); return true; }
+  catch(e) { console.error('savePicks error:', e.message); return false; }
+}
+
 function fetchFA(faPath) {
   return new Promise((resolve) => {
     const req = https.get({
@@ -100,9 +66,7 @@ function flightStatus(fl) {
     status.includes('departed') || status.includes('en route') ||
     status.includes('active')   || status.includes('taxiing') ||
     status.includes('airborne') || fl.progress_percent > 0
-  ) {
-    state = 'departed';
-  }
+  ) { state = 'departed'; }
   const depTz = tzOffset(fl.origin?.timezone      || 'Australia/Brisbane');
   const arrTz = tzOffset(fl.destination?.timezone || 'Australia/Brisbane');
   return {
@@ -126,8 +90,7 @@ function getBestFlight(flights) {
 
 const respond = (statusCode, headers, obj) => ({ statusCode, headers, body: JSON.stringify(obj) });
 
-// ── Handler ──────────────────────────────────────────────────────
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin':  '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -142,7 +105,9 @@ exports.handler = async (event) => {
   if (!p.startsWith('/')) p = '/' + p;
   console.log('PATH:', p, method);
 
-  // ── GET /flight/VA309 ──
+  const store = getStore(context);
+
+  // GET /flight/VA309
   const flightMatch = p.match(/^\/flight\/([A-Z0-9]+)$/i);
   if (flightMatch && method === 'GET') {
     const code = flightMatch[1].toUpperCase();
@@ -160,7 +125,7 @@ exports.handler = async (event) => {
     });
   }
 
-  // ── GET /status/VA309 ──
+  // GET /status/VA309
   const statusMatch = p.match(/^\/status\/([A-Z0-9]+)$/i);
   if (statusMatch && method === 'GET') {
     const code = statusMatch[1].toUpperCase();
@@ -171,74 +136,80 @@ exports.handler = async (event) => {
     return respond(200, headers, flightStatus(fl));
   }
 
-  // ── GET /picks/VA309 ──
+  // GET /picks/VA309
   const getPicksMatch = p.match(/^\/picks\/([A-Z0-9]+)$/i);
   if (getPicksMatch && method === 'GET') {
     const code = getPicksMatch[1].toUpperCase();
-    const store = await jsonbinGet();
-    return respond(200, headers, (store.flights || {})[code] || {});
+    const picks = await loadPicks(store, code);
+    return respond(200, headers, picks);
   }
 
-  // ── GET /picks/VA309/dep/09:11 ──
+  // GET /picks/VA309/dep/09:11
   const depPicksMatch = p.match(/^\/picks\/([A-Z0-9]+)\/dep\/(.+)$/i);
   if (depPicksMatch && method === 'GET') {
     const code    = depPicksMatch[1].toUpperCase();
     const depTime = decodeURIComponent(depPicksMatch[2]);
-    const store   = await jsonbinGet();
-    const flightPicks = ((store.flights || {})[code]) || {};
+    const picks   = await loadPicks(store, code);
     const arrTaken = {};
-    for (const [combo, entry] of Object.entries(flightPicks)) {
+    for (const [combo, entry] of Object.entries(picks)) {
       const [d, a] = combo.split('|');
       if (d === depTime) arrTaken[a] = typeof entry === 'object' ? entry.seat : entry;
     }
     return respond(200, headers, arrTaken);
   }
 
-  // ── POST /picks/VA309 ──
+  // POST /picks/VA309
   const postPicksMatch = p.match(/^\/picks\/([A-Z0-9]+)$/i);
   if (postPicksMatch && method === 'POST') {
     const code = postPicksMatch[1].toUpperCase();
     const { dep, arr, seat, mobile } = JSON.parse(event.body || '{}');
     if (!dep || !arr || !seat) return respond(400, headers, { error: 'Need dep, arr, seat' });
-    const store = await jsonbinGet();
-    if (!store.flights) store.flights = {};
-    if (!store.flights[code]) store.flights[code] = {};
+    const picks = await loadPicks(store, code);
     const combo = `${dep}|${arr}`;
-    if (store.flights[code][combo]) {
-      const takenBy = store.flights[code][combo].seat || store.flights[code][combo];
+    if (picks[combo]) {
+      const takenBy = picks[combo].seat || picks[combo];
       return respond(409, headers, { error: 'combo_taken', takenBy });
     }
-    store.flights[code][combo] = { seat, mobile: mobile || '', timestamp: new Date().toISOString(), dep, arr };
-    await jsonbinPut(store);
-    console.log(`Locked: ${code} | ${seat} → ${dep}/${arr}`);
+    picks[combo] = { seat, mobile: mobile || '', timestamp: new Date().toISOString(), dep, arr };
+    const saved = await savePicks(store, code, picks);
+    console.log(`Locked: ${code} | ${seat} → ${dep}/${arr} | saved: ${saved}`);
     return respond(200, headers, { ok: true });
   }
 
-  // ── GET /admin?key=AGS2026admin&flight=VA309 ──
+  // GET /admin?key=AGS2026admin&flight=VA309
   const adminMatch = p.match(/^\/admin$/i);
   if (adminMatch && method === 'GET') {
-    const params = new URLSearchParams(event.rawQuery || event.queryStringParameters ? new URLSearchParams(event.queryStringParameters).toString() : '');
     const key    = (event.queryStringParameters || {}).key || '';
     const flight = ((event.queryStringParameters || {}).flight || '').toUpperCase();
     if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
-    const store = await jsonbinGet();
     if (flight) {
-      return respond(200, headers, { flight, entries: (store.flights || {})[flight] || {} });
+      const picks = await loadPicks(store, flight);
+      return respond(200, headers, { flight, entries: picks });
     }
-    return respond(200, headers, { flights: store.flights || {} });
+    // Return all flights — list all keys in store
+    try {
+      const { blobs } = await store.list();
+      const flights = {};
+      for (const blob of blobs) {
+        flights[blob.key] = await loadPicks(store, blob.key);
+      }
+      return respond(200, headers, { flights });
+    } catch(e) {
+      return respond(200, headers, { flights: {} });
+    }
   }
 
-  // ── DELETE /admin/picks/VA309/COMBO?key=... ──
+  // DELETE /admin/picks/VA309/COMBO?key=...
   const deleteMatch = p.match(/^\/admin\/picks\/([A-Z0-9]+)\/(.+)$/i);
   if (deleteMatch && method === 'DELETE') {
     const key   = (event.queryStringParameters || {}).key || '';
     if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
     const code  = deleteMatch[1].toUpperCase();
     const combo = decodeURIComponent(deleteMatch[2]);
-    const store = await jsonbinGet();
-    if (store.flights?.[code]?.[combo]) {
-      delete store.flights[code][combo];
-      await jsonbinPut(store);
+    const picks = await loadPicks(store, code);
+    if (picks[combo]) {
+      delete picks[combo];
+      await savePicks(store, code, picks);
       return respond(200, headers, { ok: true, deleted: combo });
     }
     return respond(404, headers, { error: 'Entry not found' });
