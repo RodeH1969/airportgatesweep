@@ -71,6 +71,14 @@ function fetchFA(faPath) {
   });
 }
 
+function timeToMins(t) {
+  if (!t) return null;
+  const clean = t.replace(/^[<>]\s*/, '');
+  const parts = clean.split(':').map(Number);
+  if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+  return parts[0] * 60 + parts[1];
+}
+
 function toLocalTime(iso, offsetHours) {
   if (!iso) return null;
   const d = new Date(iso);
@@ -180,15 +188,22 @@ exports.handler = async (event) => {
     const flights = data.flights || [];
     if (!flights.length) return respond(404, headers, { error: 'Flight not found — check the number' });
     const fl = getBestFlight(flights);
+    const flInfo = flightStatus(fl);
+    // Overlay locked actual times from store if available
+    const store = await loadPicks();
+    const locked = (store.actuals || {})[code] || {};
+    if (locked.actual_dep) flInfo.actual_dep = locked.actual_dep;
+    if (locked.actual_arr) flInfo.actual_arr = locked.actual_arr;
+
     return respond(200, headers, {
       code,
       from: fl.origin?.code_iata || fl.origin?.code || '???',
       to:   fl.destination?.code_iata || fl.destination?.code || '???',
-      ...flightStatus(fl)
+      ...flInfo
     });
   }
 
-  // GET /status/VA309
+  // GET /status/VA309 — also auto-locks actual times and awards winner
   const statusMatch = p.match(/^\/status\/([A-Z0-9]+)$/i);
   if (statusMatch && method === 'GET') {
     const code = statusMatch[1].toUpperCase();
@@ -196,7 +211,69 @@ exports.handler = async (event) => {
     if (fa.statusCode !== 200) return respond(fa.statusCode, headers, { error: 'FA error' });
     const data = JSON.parse(fa.body);
     const fl = getBestFlight(data.flights || [{}]);
-    return respond(200, headers, flightStatus(fl));
+    const status = flightStatus(fl);
+
+    // Auto-lock actual times into picks.json the moment we get them
+    if (status.actual_dep || status.actual_arr) {
+      const store = await loadPicks();
+      let changed = false;
+
+      if (!store.actuals) store.actuals = {};
+      if (!store.actuals[code]) store.actuals[code] = {};
+
+      if (status.actual_dep && !store.actuals[code].actual_dep) {
+        store.actuals[code].actual_dep = status.actual_dep;
+        changed = true;
+        console.log('Locked actual_dep for ' + code + ': ' + status.actual_dep);
+      }
+      if (status.actual_arr && !store.actuals[code].actual_arr) {
+        store.actuals[code].actual_arr = status.actual_arr;
+        changed = true;
+        console.log('Locked actual_arr for ' + code + ': ' + status.actual_arr);
+      }
+
+      // Auto-award winner when both times are locked and not yet awarded
+      if (store.actuals[code].actual_dep && store.actuals[code].actual_arr &&
+          !(store.winners || {})[code]) {
+        const entries = (store.flights || {})[code] || {};
+        const entryList = Object.entries(entries);
+        if (entryList.length > 0) {
+          const adm = timeToMins(store.actuals[code].actual_dep);
+          const aam = timeToMins(store.actuals[code].actual_arr);
+          const scored = entryList.map(([combo, entry]) => {
+            const e = typeof entry === 'object' ? entry : { seat: entry, dep: combo.split('|')[0], arr: combo.split('|')[1] };
+            const dm = timeToMins(e.dep);
+            const am = timeToMins(e.arr);
+            const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : 999;
+            const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : 999;
+            return { seat: e.seat, dep: e.dep, arr: e.arr, depDiff, arrDiff, score: depDiff + arrDiff };
+          }).sort((a, b) => a.score - b.score);
+
+          if (!store.winners) store.winners = {};
+          store.winners[code] = {
+            winner: scored[0],
+            allScores: scored,
+            actualDep: store.actuals[code].actual_dep,
+            actualArr: store.actuals[code].actual_arr,
+            publishedAt: new Date().toISOString(),
+            autoAwarded: true
+          };
+          changed = true;
+          console.log('Auto-awarded winner for ' + code + ': Seat ' + scored[0].seat);
+        }
+      }
+
+      if (changed) {
+        const sha = store.sha; delete store.sha;
+        await savePicks(store, sha);
+      }
+
+      // Return actual times from locked store
+      status.actual_dep = store.actuals[code].actual_dep || status.actual_dep;
+      status.actual_arr = store.actuals[code].actual_arr || status.actual_arr;
+    }
+
+    return respond(200, headers, status);
   }
 
   // GET /picks/VA309
@@ -251,8 +328,8 @@ exports.handler = async (event) => {
     const flight = ((event.queryStringParameters || {}).flight || '').toUpperCase();
     if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
     const store = await loadPicks();
-    if (flight) return respond(200, headers, { flight, entries: (store.flights || {})[flight] || {}, winners: store.winners || {} });
-    return respond(200, headers, { flights: store.flights || {}, winners: store.winners || {} });
+    if (flight) return respond(200, headers, { flight, entries: (store.flights || {})[flight] || {}, winners: store.winners || {}, actuals: store.actuals || {} });
+    return respond(200, headers, { flights: store.flights || {}, winners: store.winners || {}, actuals: store.actuals || {} });
   }
 
   // DELETE /admin/picks/VA309/COMBO?key=...

@@ -106,10 +106,11 @@
 <div id="toast" class="toast"></div>
 
 <script>
-  let adminKey = '';
-  let allData  = {};
-  let faCache  = {}; // cache FA data per flight so it survives re-renders
-  const BASE   = '/.netlify/functions/api';
+  let adminKey  = '';
+  let allData   = {};
+  let faCache   = {}; // cache FA data per flight
+  let actualCache = {}; // locked actual times from server
+  const BASE    = '/.netlify/functions/api';
 
   function login() {
     const k = document.getElementById('key-input').value.trim();
@@ -121,6 +122,15 @@
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('main').style.display = 'block';
         allData = data.flights || {};
+        // Load locked actual times from server into cache
+        const actuals = data.actuals || {};
+        for (const [code, times] of Object.entries(actuals)) {
+          actualCache[code] = times;
+          if (!faCache[code]) faCache[code] = {};
+          if (times.actual_dep) faCache[code].actual_dep = times.actual_dep;
+          if (times.actual_arr) faCache[code].actual_arr = times.actual_arr;
+          if (times.actual_dep || times.actual_arr) faCache[code].state = 'departed';
+        }
         renderAll(allData);
       });
   }
