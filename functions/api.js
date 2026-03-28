@@ -303,7 +303,7 @@ exports.handler = async (event) => {
   const postPicksMatch = p.match(/^\/picks\/([A-Z0-9]+)$/i);
   if (postPicksMatch && method === 'POST') {
     const code = postPicksMatch[1].toUpperCase();
-    const { dep, arr, seat, mobile } = JSON.parse(event.body || '{}');
+    const { dep, arr, seat, mobile, boardingPass } = JSON.parse(event.body || '{}');
     if (!dep || !arr || !seat) return respond(400, headers, { error: 'Need dep, arr, seat' });
     const store = await loadPicks();
     if (!store.flights) store.flights = {};
@@ -313,7 +313,7 @@ exports.handler = async (event) => {
       const takenBy = store.flights[code][combo].seat || store.flights[code][combo];
       return respond(409, headers, { error: 'combo_taken', takenBy });
     }
-    store.flights[code][combo] = { seat, mobile: mobile || '', timestamp: new Date().toISOString(), dep, arr };
+    store.flights[code][combo] = { seat, mobile: mobile || '', boardingPass: boardingPass || null, timestamp: new Date().toISOString(), dep, arr };
     const sha = store.sha;
     delete store.sha;
     await savePicks(store, sha);

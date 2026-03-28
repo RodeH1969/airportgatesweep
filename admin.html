@@ -277,19 +277,21 @@
       <!-- Leaderboard -->
       <table>
         <thead><tr>
-          <th>#</th><th>Seat</th><th>Dep Pick</th><th>Arr Pick</th><th>Time</th>
+          <th>#</th><th>Seat</th><th>Mobile</th><th>Dep Pick</th><th>Arr Pick</th><th>Time</th>
           ${hasScores ? '<th>Score</th>' : ''}
-          <th>Delete</th>
+          <th>BP</th><th>Delete</th>
         </tr></thead>
         <tbody id="tbody-${code}">
         ${scored.map((e, i) => `
           <tr>
             <td><span class="rank-badge">${i===0&&hasScores?'🏆':i===1&&hasScores?'🥈':i===2&&hasScores?'🥉':i+1}</span></td>
             <td class="seat">${e.seat||'—'}</td>
+            <td style="color:#10b981;font-size:0.75rem;font-weight:700;">${e.mobile||'—'}</td>
             <td class="time">${e.dep||'—'}</td>
             <td class="time">${e.arr||'—'}</td>
             <td style="color:#475569;font-size:0.72rem;">${e.timestamp ? new Date(e.timestamp).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
             ${hasScores ? `<td class="score ${i===0?'winner':''}">${e.total!==null?`${e.depDiff}m + ${e.arrDiff}m = <strong>${e.total}m</strong>`:'—'}</td>` : ''}
+            <td>${e.boardingPass ? `<img src="${e.boardingPass}" onclick="showBP(this.src)" style="width:40px;height:28px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid #334155;" title="Click to view">` : '—'}</td>
             <td><button class="del-btn" onclick="deleteEntry('${code}','${encodeURIComponent(e.combo)}')">✕</button></td>
           </tr>`).join('')}
         </tbody>
@@ -439,6 +441,14 @@
             </div>`;
         }).join('');
       });
+  }
+
+  function showBP(src) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+    modal.innerHTML = `<img src="${src}" style="max-width:95vw;max-height:95vh;border-radius:8px;">`;
+    modal.onclick = () => modal.remove();
+    document.body.appendChild(modal);
   }
 
   function showToast(msg) {

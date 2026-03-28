@@ -1565,10 +1565,20 @@
 
     // Check combo with server before locking
     try {
+      // Get mobile number
+      const mobile = '+61' + (document.getElementById('bp-mobile-input').value.trim());
+
+      // Get boarding pass as base64
+      let boardingPassData = null;
+      const bpPreview = document.getElementById('bp-preview');
+      if (bpPreview && bpPreview.src && bpPreview.src.startsWith('data:')) {
+        boardingPassData = bpPreview.src;
+      }
+
       const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.code}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dep: myDep, arr: myArr, seat })
+        body: JSON.stringify({ dep: myDep, arr: myArr, seat, mobile, boardingPass: boardingPassData })
       });
       if (r.status === 409) {
         const data = await r.json();
