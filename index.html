@@ -1563,22 +1563,12 @@
       return;
     }
 
-    // Check combo with server before locking
+    // Check combo with server before locking (no mobile/photo yet - those come at submitEntry)
     try {
-      // Get mobile number
-      const mobile = '+61' + (document.getElementById('bp-mobile-input').value.trim());
-
-      // Get boarding pass as base64
-      let boardingPassData = null;
-      const bpPreview = document.getElementById('bp-preview');
-      if (bpPreview && bpPreview.src && bpPreview.src.startsWith('data:')) {
-        boardingPassData = bpPreview.src;
-      }
-
       const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.code}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dep: myDep, arr: myArr, seat, mobile, boardingPass: boardingPassData })
+        body: JSON.stringify({ dep: myDep, arr: myArr, seat, mobile: '', boardingPass: null })
       });
       if (r.status === 409) {
         const data = await r.json();
@@ -1677,7 +1667,26 @@
     btn.disabled = !(boardingPassVerified && bpMobileValid);
   }
 
-  function submitEntry() {
+  async function submitEntry() {
+    // Get mobile number
+    const mobile = '+61' + (document.getElementById('bp-mobile-input').value.trim());
+
+    // Get boarding pass as base64
+    let boardingPassData = null;
+    const bpPreview = document.getElementById('bp-preview');
+    if (bpPreview && bpPreview.src && bpPreview.src.startsWith('data:')) {
+      boardingPassData = bpPreview.src;
+    }
+
+    // Update the entry with mobile and boarding pass
+    try {
+      await fetch(`/.netlify/functions/api/picks/${currentFlight.code}/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dep: myDep, arr: myArr, seat: document.getElementById('bp-seat').textContent, mobile, boardingPass: boardingPassData })
+      });
+    } catch(e) { console.error('Update entry error:', e); }
+
     showPage('page-success');
   }
 

@@ -350,6 +350,23 @@ exports.handler = async (event) => {
     return respond(404, headers, { error: 'Entry not found' });
   }
 
+  // POST /picks/VA309/update — add mobile and boarding pass after boarding page
+  const updatePickMatch = p.match(/^\/picks\/([A-Z0-9]+)\/update$/i);
+  if (updatePickMatch && method === 'POST') {
+    const code = updatePickMatch[1].toUpperCase();
+    const { dep, arr, seat, mobile, boardingPass } = JSON.parse(event.body || '{}');
+    const store = await loadPicks();
+    const combo = `${dep}|${arr}`;
+    if (store.flights?.[code]?.[combo]) {
+      store.flights[code][combo].mobile = mobile || '';
+      if (boardingPass) store.flights[code][combo].boardingPass = boardingPass;
+      const sha = store.sha; delete store.sha;
+      await savePicks(store, sha);
+      console.log('Updated entry with mobile+BP: ' + code + ' ' + seat);
+    }
+    return respond(200, headers, { ok: true });
+  }
+
   // GET /winner/QF533
   const getWinnerMatch = p.match(/^\/winner\/([A-Z0-9]+)$/i);
   if (getWinnerMatch && method === 'GET') {
