@@ -16,11 +16,12 @@ function jsonbinGet() {
       let body = '';
       res.on('data', c => body += c);
       res.on('end', () => {
+        console.log('JSONBin GET status:', res.statusCode, 'body:', body.substring(0, 200));
         try { resolve(JSON.parse(body)); }
-        catch(e) { resolve({ flights: {} }); }
+        catch(e) { console.error('JSONBin parse error:', e.message); resolve({ flights: {} }); }
       });
     });
-    req.on('error', () => resolve({ flights: {} }));
+    req.on('error', (e) => { console.error('JSONBin GET error:', e.message); resolve({ flights: {} }); });
   });
 }
 
@@ -39,9 +40,12 @@ function jsonbinPut(data) {
     }, (res) => {
       let b = '';
       res.on('data', c => b += c);
-      res.on('end', () => resolve(true));
+      res.on('end', () => {
+        console.log('JSONBin PUT status:', res.statusCode, 'body:', b.substring(0, 200));
+        resolve(res.statusCode === 200);
+      });
     });
-    req.on('error', () => resolve(false));
+    req.on('error', (e) => { console.error('JSONBin PUT error:', e.message); resolve(false); });
     req.write(body);
     req.end();
   });
