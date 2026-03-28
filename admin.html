@@ -81,7 +81,15 @@
     <input class="flight-input" id="flight-filter" placeholder="e.g. QF533" oninput="this.value=this.value.toUpperCase()">
     <button class="btn" onclick="loadFlight()">Load Flight</button>
     <button class="btn green" onclick="loadAll()">All Flights</button>
+    <button class="btn" style="background:#a855f7" onclick="showHistory()">🏆 Winners History</button>
     <button class="btn" style="background:#6366f1" onclick="exportCSV()">Export CSV</button>
+  </div>
+
+  <div id="history-panel" style="display:none;margin-bottom:16px;">
+    <div class="card">
+      <h3 style="color:#a855f7;font-size:0.9rem;font-weight:900;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🏆 Completed Flights & Winners</h3>
+      <div id="history-content"><div class="empty">Loading...</div></div>
+    </div>
   </div>
 
   <div id="stats-row" style="display:none;" class="card">
@@ -381,6 +389,70 @@
     a.download = `AGS_${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
     showToast('CSV downloaded');
+  }
+
+  function showHistory() {
+    const panel = document.getElementById('history-panel');
+    const content = document.getElementById('history-content');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel.style.display === 'none') return;
+
+    fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}`)
+      .then(r => r.json())
+      .then(data => {
+        const winners = data.winners || {};
+        const flights = data.flights || {};
+
+        if (!Object.keys(winners).length) {
+          content.innerHTML = '<div class="empty">No completed flights yet</div>';
+          return;
+        }
+
+        content.innerHTML = Object.entries(winners).map(([code, w]) => {
+          const allScores = w.allScores || [];
+          const winner = w.winner || {};
+          const entries = flights[code] || {};
+          const entryCount = Object.keys(entries).length;
+
+          const rows = allScores.map((s, i) => `
+            <tr style="${i===0?'background:rgba(168,85,247,0.1);':''}">
+              <td style="padding:5px 10px;">${i===0?'🏆':i===1?'🥈':i===2?'🥉':i+1}</td>
+              <td style="padding:5px 10px;font-weight:900;color:${i===0?'#a855f7':'#e2e8f0'};">${s.seat}</td>
+              <td style="padding:5px 10px;color:#60a5fa;">${s.dep}</td>
+              <td style="padding:5px 10px;color:#60a5fa;">${s.arr}</td>
+              <td style="padding:5px 10px;font-weight:${i===0?'900':'400'};color:${i===0?'#a855f7':'#94a3b8'};">${s.score !== null ? s.score+'m' : '—'}</td>
+            </tr>`).join('');
+
+          return `
+            <div style="margin-bottom:20px;border:1px solid #334155;border-radius:10px;overflow:hidden;">
+              <div style="background:#1e293b;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div>
+                  <span style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#f59e0b;">✈️ ${code}</span>
+                  <span style="margin-left:10px;font-size:0.75rem;color:#64748b;">${entryCount} entries</span>
+                </div>
+                <div style="font-size:0.75rem;color:#64748b;">
+                  Actual: ${w.actualDep||'—'} → ${w.actualArr||'—'} &nbsp;·&nbsp;
+                  Published: ${w.publishedAt ? new Date(w.publishedAt).toLocaleString('en-AU') : '—'}
+                </div>
+              </div>
+              <div style="padding:12px 16px;background:#0f172a;">
+                <div style="font-size:0.8rem;color:#a855f7;font-weight:900;margin-bottom:8px;">
+                  🏆 WINNER: Seat ${winner.seat} — ${winner.score}m off
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:0.78rem;color:#e2e8f0;">
+                  <thead><tr style="color:#64748b;font-size:0.65rem;text-transform:uppercase;">
+                    <th style="padding:4px 10px;text-align:left;">#</th>
+                    <th style="padding:4px 10px;text-align:left;">Seat</th>
+                    <th style="padding:4px 10px;text-align:left;">Dep</th>
+                    <th style="padding:4px 10px;text-align:left;">Arr</th>
+                    <th style="padding:4px 10px;text-align:left;">Score</th>
+                  </tr></thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
+            </div>`;
+        }).join('');
+      });
   }
 
   function showToast(msg) {

@@ -251,8 +251,8 @@ exports.handler = async (event) => {
     const flight = ((event.queryStringParameters || {}).flight || '').toUpperCase();
     if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
     const store = await loadPicks();
-    if (flight) return respond(200, headers, { flight, entries: (store.flights || {})[flight] || {} });
-    return respond(200, headers, { flights: store.flights || {} });
+    if (flight) return respond(200, headers, { flight, entries: (store.flights || {})[flight] || {}, winners: store.winners || {} });
+    return respond(200, headers, { flights: store.flights || {}, winners: store.winners || {} });
   }
 
   // DELETE /admin/picks/VA309/COMBO?key=...
