@@ -1144,6 +1144,52 @@
     } catch(e) {}
   }
 
+  async function showLivePicks(flightCode) {
+    history.replaceState(null, '', '/?flight=' + flightCode);
+    currentFlight = { code: flightCode };
+    document.getElementById('page-success').innerHTML = `<div style="padding:24px;text-align:center;"><div style="font-size:2rem;">✈️</div><div style="font-family:Nunito,sans-serif;font-weight:900;color:#1e3a5f;">${flightCode}</div><div style="color:#94a3b8;margin-top:8px;">Loading picks...</div></div>`;
+    showPage('page-success');
+    await refreshLivePicks(flightCode);
+    startStatusPolling(flightCode);
+  }
+
+  async function refreshLivePicks(flightCode) {
+    try {
+      const wr = await fetch('/.netlify/functions/api/winner/' + flightCode);
+      const wd = await wr.json();
+      if (wd.announced) { showWinnerScreen(wd, flightCode); return; }
+
+      const pr = await fetch('/.netlify/functions/api/picks/' + flightCode);
+      const picks = await pr.json();
+      const entries = Object.entries(picks).map(([combo, seat]) => {
+        const [dep, arr] = combo.split('|');
+        return { seat, dep, arr };
+      }).sort((a, b) => a.seat.localeCompare(b.seat));
+
+      const rows = entries.length === 0
+        ? '<div style="text-align:center;color:#94a3b8;padding:20px;">No entries yet</div>'
+        : entries.map(e => `<div style="display:flex;align-items:center;padding:10px 16px;border-top:1px solid #e8f0fe;"><div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#1e3a5f;width:60px;">${e.seat}</div><div style="color:#2563eb;font-weight:700;font-size:0.9rem;flex:1;">${e.dep}</div><div style="color:#2563eb;font-weight:700;font-size:0.9rem;flex:1;">${e.arr}</div></div>`).join('');
+
+      document.getElementById('page-success').innerHTML = `
+        <div style="padding:20px;max-width:420px;margin:0 auto;">
+          <div style="text-align:center;margin-bottom:16px;">
+            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.4rem;color:#f59e0b;">✈️ ${flightCode}</div>
+            <div style="font-size:0.8rem;color:#94a3b8;margin-top:4px;">Live picks — ${entries.length} player${entries.length !== 1 ? 's' : ''} entered</div>
+          </div>
+          <div style="background:#fff;border:1.5px solid #c8dff5;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(37,99,235,0.08);margin-bottom:16px;">
+            <div style="display:flex;padding:8px 16px;background:#f0f7ff;">
+              <div style="font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;width:60px;font-weight:800;">Seat</div>
+              <div style="font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;flex:1;font-weight:800;">Dep Pick</div>
+              <div style="font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;flex:1;font-weight:800;">Arr Pick</div>
+            </div>
+            ${rows}
+          </div>
+          <div style="text-align:center;color:#94a3b8;font-size:0.75rem;margin-bottom:16px;">🔄 Updates automatically when flight lands</div>
+          <button onclick="history.replaceState(null,'','/');showPage('page-search')" style="width:100%;padding:14px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">✈️ Enter Another Flight</button>
+        </div>`;
+    } catch(e) { console.error('refreshLivePicks error:', e); }
+  }
+
   function showWinnerScreen(wd, flightCode) {
     stopStatusPolling();
     // wd.winner is the stored object: { winner, allScores, actualDep, actualArr }
@@ -1157,9 +1203,9 @@
     const rows = allScores.map((s, i) => `
       <tr style="${i===0?'background:rgba(245,158,11,0.1);':''}">
         <td style="padding:6px 10px;font-size:0.9rem;">${i===0?'🏆':i===1?'🥈':i===2?'🥉':i+1}</td>
-        <td style="padding:6px 10px;font-family:Nunito,sans-serif;font-weight:900;color:${i===0?'#f59e0b':'#1e3a5f'};">${s.seat}</td>
-        <td style="padding:6px 10px;color:#2563eb;font-weight:700;">${s.dep}</td>
-        <td style="padding:6px 10px;color:#2563eb;font-weight:700;">${s.arr}</td>
+        <td style="padding:6px 10px;font-family:Nunito,sans-serif;font-weight:900;color:${i===0?'#f59e0b':'#1e3a5f'};">${s.seat||s.winner_seat||'—'}</td>
+        <td style="padding:6px 10px;color:#2563eb;font-weight:700;">${s.dep_time||s.dep||'—'}</td>
+        <td style="padding:6px 10px;color:#2563eb;font-weight:700;">${s.arr_time||s.arr||'—'}</td>
         <td style="padding:6px 10px;font-weight:${i===0?'900':'700'};color:${i===0?'#f59e0b':'#1e3a5f'};">${s.score !== null ? s.score + 'm' : '—'}</td>
       </tr>`).join('');
 
@@ -1192,12 +1238,14 @@
           </table>
         </div>
 
-        <button onclick="showPage('page-search')" style="width:100%;margin-top:16px;padding:14px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
-          Play Another Flight
+        <button onclick="history.replaceState(null,'','/');showPage('page-search')" style="width:100%;margin-top:16px;padding:14px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
+          ✈️ Enter Another Flight
         </button>
       </div>`;
 
-    showPage('page-success');
+    const seat = document.getElementById('bp-seat').textContent.trim();
+    // Redirect to live picks page for this flight
+    window.location.href = '/?flight=' + encodeURIComponent(currentFlight.code);
   }
 
   function lockoutFlight(data) {
@@ -1689,7 +1737,18 @@
       } catch(e) { console.error('Update error:', e); }
     }
 
-    showPage('page-success');
+    const seat = document.getElementById('bp-seat').textContent.trim();
+    // Redirect to live picks page for this flight
+    window.location.href = '/?flight=' + encodeURIComponent(currentFlight.code);
+  }
+
+  // On load: check URL param ?flight=QF529 and show live picks page
+  buildFlightList();
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _flightParam = _urlParams.get('flight');
+  if (_flightParam) {
+    // Small delay to ensure DOM is fully ready
+    setTimeout(() => showLivePicks(_flightParam.toUpperCase()), 50);
   }
 
 </script>
