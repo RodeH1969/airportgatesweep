@@ -1582,7 +1582,7 @@
         updateSummaryAndCTA();
         return;
       }
-    } catch(e) { /* server not running — allow offline use */ }
+    } catch(e) { showToast('Save error: ' + e.message); console.error('lockIn error:', e); return; }
 
     locked = true;
 
