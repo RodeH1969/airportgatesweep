@@ -255,10 +255,14 @@
 
   function renderFlight(code, entries, actualDep, actualArr) {
     const existing = document.getElementById(`flight-card-${code}`);
-    const list = Object.entries(entries || {});
+    // Handle both Supabase array and legacy object formats
+    const list = Array.isArray(entries) ? entries : Object.entries(entries || {}).map(([combo, e]) => {
+      const obj = typeof e === 'object' ? e : { seat: e };
+      return { dep_time: combo.split('|')[0], arr_time: combo.split('|')[1], ...obj };
+    });
     const scored = scoreEntries(list, actualDep, actualArr);
     const hasScores = scored.some(s => s.total !== null);
-    const winner = hasScores ? scored[0] : null;
+    const winner = (hasScores && scored.length > 0) ? scored[0] : null;
 
     const card = document.createElement('div');
     card.className = 'card';
@@ -318,7 +322,7 @@
             <td class="time">${e.arr_time||e.arr||'—'}</td>
             <td style="color:#475569;font-size:0.72rem;">${(e.created_at||e.timestamp) ? new Date(e.created_at||e.timestamp).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
             ${hasScores ? `<td class="score ${i===0?'winner':''}">${e.total!==null?`${e.depDiff}m + ${e.arrDiff}m = <strong>${e.total}m</strong>`:'—'}</td>` : ''}
-            <td>${(e.boarding_pass||e.boardingPass) ? `<img src="${e.boarding_pass||e.boardingPass}" onclick="showBP(this.src)" style="width:40px;height:28px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid #334155;" title="Click to view">` : '—'}</td>
+            <td>${(e.has_boarding_pass||e.boarding_pass||e.boardingPass) ? `<img src="${e.boarding_pass||e.boardingPass||''}" onclick="showBP(this.src)" style="width:40px;height:28px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid #334155;" title="Click to view">` : '—'}</td>
             <td><button class="del-btn" onclick="deleteEntry('${code}','${encodeURIComponent(e.combo)}')">✕</button></td>
           </tr>`).join('')}
         </tbody>

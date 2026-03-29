@@ -385,7 +385,9 @@ exports.handler = async (event) => {
     const flights = {};
     allEntries.forEach(e => {
       if (!flights[e.flight_code]) flights[e.flight_code] = [];
-      flights[e.flight_code].push(e);
+      // Strip boarding pass from list view (fetch individually when needed)
+      const { boarding_pass, ...rest } = e;
+      flights[e.flight_code].push({ ...rest, has_boarding_pass: !!boarding_pass });
     });
     return respond(200, headers, { flights });
   }
