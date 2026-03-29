@@ -1168,31 +1168,76 @@
       const entries = Object.entries(picks).map(([combo, seat]) => {
         const [dep, arr] = combo.split('|');
         return { seat, dep, arr };
-      }).sort((a, b) => a.seat.localeCompare(b.seat));
+      }).sort((a, b) => a.dep.localeCompare(b.dep) || a.arr.localeCompare(b.arr));
 
-      const rows = entries.length === 0
-        ? '<div style="text-align:center;color:#94a3b8;padding:20px;">No entries yet</div>'
-        : entries.map(e => `<div style="display:flex;align-items:center;padding:10px 16px;border-top:1px solid #e8f0fe;"><div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#1e3a5f;width:60px;">${e.seat}</div><div style="color:#2563eb;font-weight:700;font-size:0.9rem;flex:1;">${e.dep}</div><div style="color:#2563eb;font-weight:700;font-size:0.9rem;flex:1;">${e.arr}</div></div>`).join('');
-
-      document.getElementById('page-success').innerHTML = `
-        <div style="padding:20px;max-width:420px;margin:0 auto;">
-          <div style="text-align:center;margin-bottom:16px;">
-            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.4rem;color:#f59e0b;">✈️ ${flightCode}</div>
-            <div style="font-size:0.8rem;color:#94a3b8;margin-top:4px;">Live picks — ${entries.length} player${entries.length !== 1 ? 's' : ''} entered</div>
-          </div>
-          <div style="background:#fff;border:1.5px solid #c8dff5;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(37,99,235,0.08);margin-bottom:16px;">
-            <div style="display:flex;padding:8px 16px;background:#f0f7ff;">
-              <div style="font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;width:60px;font-weight:800;">Seat</div>
-              <div style="font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;flex:1;font-weight:800;">Dep Pick</div>
-              <div style="font-size:0.65rem;color:#64a0c8;text-transform:uppercase;letter-spacing:1px;flex:1;font-weight:800;">Arr Pick</div>
+      const cards = entries.length === 0
+        ? `<div style="text-align:center;padding:32px 16px;color:#94a3b8;"><div style="font-size:2.5rem;margin-bottom:10px;">🎫</div><div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#1e3a5f;">No entries yet — be the first!</div></div>`
+        : entries.map(e => `
+          <div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid #e8f0fe;gap:10px;">
+            <div style="background:#1e3a5f;color:#fff;font-family:Nunito,sans-serif;font-weight:900;font-size:0.95rem;border-radius:8px;padding:6px 10px;min-width:44px;text-align:center;">${e.seat}</div>
+            <div style="flex:1;display:flex;gap:8px;">
+              <div style="flex:1;background:#eff6ff;border-radius:8px;padding:6px 8px;text-align:center;">
+                <div style="font-size:0.58rem;color:#3b82f6;font-weight:800;text-transform:uppercase;letter-spacing:1px;">🛫 Dep</div>
+                <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#1d4ed8;">${e.dep}</div>
+              </div>
+              <div style="flex:1;background:#f0fdf4;border-radius:8px;padding:6px 8px;text-align:center;">
+                <div style="font-size:0.58rem;color:#16a34a;font-weight:800;text-transform:uppercase;letter-spacing:1px;">🛬 Arr</div>
+                <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#15803d;">${e.arr}</div>
+              </div>
             </div>
-            ${rows}
+          </div>`).join('');
+
+      const sp = document.getElementById('page-success');
+      sp.innerHTML = `
+        <div style="max-width:420px;margin:0 auto;padding-bottom:30px;">
+          <div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:20px;text-align:center;">
+            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.5rem;color:#f59e0b;letter-spacing:1px;">✈️ ${flightCode}</div>
+            <div style="font-size:0.8rem;color:#93c5fd;margin-top:4px;">${entries.length} seat${entries.length !== 1 ? 's' : ''} locked in the sweep</div>
           </div>
-          <div style="text-align:center;color:#94a3b8;font-size:0.75rem;margin-bottom:16px;">🔄 Updates automatically when flight lands</div>
-          <button onclick="history.replaceState(null,'','/');showPage('page-search')" style="width:100%;padding:14px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">✈️ Enter Another Flight</button>
+
+          <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:14px 16px;display:flex;align-items:center;gap:14px;">
+            <img src="/Prize.png" style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:2px solid rgba(255,255,255,0.4);" onerror="this.style.display='none'">
+            <div>
+              <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#fff;">🏆 Dan Murphy's Gift Card</div>
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.9);margin-top:3px;line-height:1.4;">One lucky passenger wins when we land.<br>Closest guess to actual times takes it!</div>
+            </div>
+          </div>
+
+          <div style="background:#fff8ed;border-left:4px solid #f59e0b;margin:14px 14px 0;padding:12px 14px;border-radius:0 10px 10px 0;">
+            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:0.75rem;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">How the winner is decided</div>
+            <div style="font-size:0.78rem;color:#78350f;line-height:1.5;">Everyone guessed gate <strong>departure</strong> and <strong>arrival</strong> times. After landing, actual times are checked. The seat with the <strong>lowest total minutes off</strong> wins! 🎉</div>
+          </div>
+
+          <div style="margin:14px 14px 0;">
+            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:0.72rem;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🎯 All Picks — ${flightCode}</div>
+            <div style="background:#fff;border:1.5px solid #c8dff5;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(37,99,235,0.07);">
+              <div style="display:flex;padding:8px 14px;background:#f0f7ff;gap:10px;align-items:center;">
+                <div style="min-width:44px;font-size:0.6rem;color:#64a0c8;font-weight:800;text-transform:uppercase;letter-spacing:1px;">Seat</div>
+                <div style="flex:1;font-size:0.6rem;color:#3b82f6;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:center;">🛫 Dep Pick</div>
+                <div style="flex:1;font-size:0.6rem;color:#16a34a;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:center;">🛬 Arr Pick</div>
+              </div>
+              ${cards}
+            </div>
+          </div>
+
+          <div style="text-align:center;color:#94a3b8;font-size:0.72rem;margin:12px 14px 0;padding:10px;background:#f8fafc;border-radius:10px;">
+            🔄 Updates live — winner announced automatically on landing
+          </div>
+
+          <div style="margin:12px 14px 0;">
+            <button onclick="history.replaceState(null,'\'/');showPage('page-search')" style="width:100%;padding:11px;background:#e2e8f0;border:none;color:#64748b;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:900;border-radius:12px;cursor:pointer;">
+              ✈️ Enter a Different Flight
+            </button>
+          </div>
         </div>`;
+
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      sp.classList.add('active');
+      window.scrollTo(0, 0);
+
     } catch(e) { console.error('refreshLivePicks error:', e); }
   }
+
 
   function showWinnerScreen(wd, flightCode) {
     stopStatusPolling();
