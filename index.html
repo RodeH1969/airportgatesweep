@@ -1147,8 +1147,12 @@
   async function showLivePicks(flightCode) {
     history.replaceState(null, '', '/?flight=' + flightCode);
     currentFlight = { code: flightCode };
-    document.getElementById('page-success').innerHTML = `<div style="padding:24px;text-align:center;"><div style="font-size:2rem;">✈️</div><div style="font-family:Nunito,sans-serif;font-weight:900;color:#1e3a5f;">${flightCode}</div><div style="color:#94a3b8;margin-top:8px;">Loading picks...</div></div>`;
-    showPage('page-success');
+    // Hide all pages and show success immediately
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const sp = document.getElementById('page-success');
+    sp.innerHTML = `<div style="padding:24px;text-align:center;"><div style="font-size:2rem;">✈️</div><div style="font-family:Nunito,sans-serif;font-weight:900;color:#1e3a5f;">${flightCode}</div><div style="color:#94a3b8;margin-top:8px;">Loading picks...</div></div>`;
+    sp.classList.add('active');
+    window.scrollTo(0, 0);
     await refreshLivePicks(flightCode);
     startStatusPolling(flightCode);
   }
@@ -1245,7 +1249,7 @@
 
     const seat = document.getElementById('bp-seat').textContent.trim();
     // Redirect to live picks page for this flight
-    window.location.href = '/?flight=' + encodeURIComponent(currentFlight.code);
+    showLivePicks(currentFlight.code);
   }
 
   function lockoutFlight(data) {
@@ -1739,7 +1743,7 @@
 
     const seat = document.getElementById('bp-seat').textContent.trim();
     // Redirect to live picks page for this flight
-    window.location.href = '/?flight=' + encodeURIComponent(currentFlight.code);
+    showLivePicks(currentFlight.code);
   }
 
   // On load: check URL param ?flight=QF529 and show live picks page
@@ -1747,8 +1751,7 @@
   const _urlParams = new URLSearchParams(window.location.search);
   const _flightParam = _urlParams.get('flight');
   if (_flightParam) {
-    // Small delay to ensure DOM is fully ready
-    setTimeout(() => showLivePicks(_flightParam.toUpperCase()), 50);
+    showLivePicks(_flightParam.toUpperCase());
   }
 
 </script>
