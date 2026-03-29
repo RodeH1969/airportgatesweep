@@ -121,16 +121,8 @@
         if (!data) return;
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('main').style.display = 'block';
+        // Supabase returns flights as { code: [array of entries] }
         allData = data.flights || {};
-        // Load locked actual times from server into cache
-        const actuals = data.actuals || {};
-        for (const [code, times] of Object.entries(actuals)) {
-          actualCache[code] = times;
-          if (!faCache[code]) faCache[code] = {};
-          if (times.actual_dep) faCache[code].actual_dep = times.actual_dep;
-          if (times.actual_arr) faCache[code].actual_arr = times.actual_arr;
-          if (times.actual_dep || times.actual_arr) faCache[code].state = 'departed';
-        }
         renderAll(allData);
       });
   }
@@ -148,15 +140,15 @@
     fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}&flight=${code}`)
       .then(r => r.json())
       .then(data => {
-        const entries = data.entries || {};
+        // Supabase: entries is array, actuals is object
+        const entries = data.entries || [];
+        const actuals = data.actuals || null;
         allData = { [code]: entries };
 
-        // Load locked actuals from server into cache
-        const actuals = data.actuals || {};
-        if (actuals[code]) {
+        if (actuals?.actual_dep || actuals?.actual_arr) {
           if (!faCache[code]) faCache[code] = {};
-          if (actuals[code].actual_dep) { faCache[code].actual_dep = actuals[code].actual_dep; faCache[code].state = 'departed'; }
-          if (actuals[code].actual_arr) { faCache[code].actual_arr = actuals[code].actual_arr; faCache[code].state = 'arrived'; }
+          if (actuals.actual_dep) { faCache[code].actual_dep = actuals.actual_dep; faCache[code].state = 'departed'; }
+          if (actuals.actual_arr) { faCache[code].actual_arr = actuals.actual_arr; faCache[code].state = 'arrived'; }
         }
         const cachedDep = faCache[code]?.actual_dep || null;
         const cachedArr = faCache[code]?.actual_arr || null;
@@ -216,7 +208,7 @@
     let totalEntries = 0, flightCount = 0, globalBest = null;
 
     for (const [code, entries] of Object.entries(flights)) {
-      const list = Object.entries(entries || {});
+      const list = Array.isArray(entries) ? entries : Object.entries(entries || {});
       if (!list.length) continue;
       flightCount++;
       totalEntries += list.length;
@@ -246,14 +238,18 @@
   function scoreEntries(list, actualDep, actualArr) {
     const adm = timeToMins(actualDep);
     const aam = timeToMins(actualArr);
-    return list.map(([combo, entry]) => {
-      const e = typeof entry === 'object' ? entry : { seat: entry, dep: combo.split('|')[0], arr: combo.split('|')[1] };
-      const dm = timeToMins(e.dep);
-      const am = timeToMins(e.arr);
+    // Handle both array (Supabase) and object (legacy) formats
+    const entries = Array.isArray(list) ? list : Object.entries(list).map(([combo, entry]) => {
+      const e = typeof entry === 'object' ? entry : { seat: entry };
+      return { dep_time: combo.split('|')[0], arr_time: combo.split('|')[1], ...e };
+    });
+    return entries.map(e => {
+      const dm = timeToMins(e.dep_time);
+      const am = timeToMins(e.arr_time);
       const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : null;
       const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : null;
       const total   = (depDiff !== null && arrDiff !== null) ? depDiff + arrDiff : null;
-      return { combo, ...e, depDiff, arrDiff, total };
+      return { combo: e.dep_time + '|' + e.arr_time, ...e, depDiff, arrDiff, total };
     }).sort((a, b) => (a.total ?? 9999) - (b.total ?? 9999));
   }
 
@@ -318,11 +314,11 @@
             <td><span class="rank-badge">${i===0&&hasScores?'🏆':i===1&&hasScores?'🥈':i===2&&hasScores?'🥉':i+1}</span></td>
             <td class="seat">${e.seat||'—'}</td>
             <td style="color:#10b981;font-size:0.75rem;font-weight:700;">${e.mobile||'—'}</td>
-            <td class="time">${e.dep||'—'}</td>
-            <td class="time">${e.arr||'—'}</td>
-            <td style="color:#475569;font-size:0.72rem;">${e.timestamp ? new Date(e.timestamp).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+            <td class="time">${e.dep_time||e.dep||'—'}</td>
+            <td class="time">${e.arr_time||e.arr||'—'}</td>
+            <td style="color:#475569;font-size:0.72rem;">${(e.created_at||e.timestamp) ? new Date(e.created_at||e.timestamp).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
             ${hasScores ? `<td class="score ${i===0?'winner':''}">${e.total!==null?`${e.depDiff}m + ${e.arrDiff}m = <strong>${e.total}m</strong>`:'—'}</td>` : ''}
-            <td>${e.boardingPass ? `<img src="${e.boardingPass}" onclick="showBP(this.src)" style="width:40px;height:28px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid #334155;" title="Click to view">` : '—'}</td>
+            <td>${(e.boarding_pass||e.boardingPass) ? `<img src="${e.boarding_pass||e.boardingPass}" onclick="showBP(this.src)" style="width:40px;height:28px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid #334155;" title="Click to view">` : '—'}</td>
             <td><button class="del-btn" onclick="deleteEntry('${code}','${encodeURIComponent(e.combo)}')">✕</button></td>
           </tr>`).join('')}
         </tbody>
