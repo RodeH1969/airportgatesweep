@@ -1,25 +1,23 @@
 const https = require('https');
 
-const FA_KEY    = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
-const ADMIN_KEY = 'AGS2026admin';
-const GH_TOKEN  = process.env.GH_TOKEN;
-const GH_OWNER  = 'RodeH1969';
-const GH_REPO   = 'airportgatesweep';
-const GH_FILE   = 'picks.json';
+const FA_KEY     = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
+const ADMIN_KEY  = 'AGS2026admin';
+const SB_URL     = 'udcriobsizpalijmwoxr.supabase.co';
+const SB_KEY     = 'sb_secret_1Ih1D7T0GuHt-MkMNhjXkQ_KfxKGuPG';
 
-// ── GitHub storage helpers ───────────────────────────────────────
-function ghRequest(method, path, body) {
+// ── Supabase REST helpers ────────────────────────────────────────
+function sbRequest(method, path, body) {
   return new Promise((resolve) => {
     const payload = body ? JSON.stringify(body) : null;
     const opts = {
-      hostname: 'api.github.com',
-      path,
+      hostname: SB_URL,
+      path: '/rest/v1/' + path,
       method,
       headers: {
-        'Authorization': `token ${GH_TOKEN}`,
-        'User-Agent': 'AirportGateSweep',
-        'Accept': 'application/vnd.github.v3+json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
         'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : 'return=representation'
       }
     };
     if (payload) opts.headers['Content-Length'] = Buffer.byteLength(payload);
@@ -27,42 +25,62 @@ function ghRequest(method, path, body) {
       let b = '';
       res.on('data', c => b += c);
       res.on('end', () => {
-        console.log('GH', method, path, res.statusCode);
+        console.log('SB', method, path, res.statusCode);
         try { resolve({ statusCode: res.statusCode, data: JSON.parse(b) }); }
-        catch(e) { resolve({ statusCode: res.statusCode, data: {} }); }
+        catch(e) { resolve({ statusCode: res.statusCode, data: [] }); }
       });
     });
-    req.on('error', (e) => { console.error('GH error:', e.message); resolve({ statusCode: 500, data: {} }); });
+    req.on('error', (e) => { console.error('SB error:', e.message); resolve({ statusCode: 500, data: [] }); });
     if (payload) req.write(payload);
     req.end();
   });
 }
 
-async function loadPicks() {
-  const r = await ghRequest('GET', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`);
-  if (r.statusCode === 404) return { flights: {}, sha: null };
-  try {
-    const content = Buffer.from(r.data.content, 'base64').toString('utf8');
-    return { ...JSON.parse(content), sha: r.data.sha };
-  } catch(e) { return { flights: {}, sha: r.data?.sha || null }; }
+async function getEntries(flightCode) {
+  const r = await sbRequest('GET', `entries?flight_code=eq.${encodeURIComponent(flightCode)}&order=created_at.asc`);
+  return Array.isArray(r.data) ? r.data : [];
 }
 
-async function savePicks(data, sha) {
-  const content = Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
-  const body = { message: 'update picks', content };
-  if (sha) body.sha = sha;
-  const result = await ghRequest('PUT', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`, body);
+async function getAllEntries() {
+  const r = await sbRequest('GET', 'entries?order=created_at.asc');
+  return Array.isArray(r.data) ? r.data : [];
+}
 
-  // If 409 conflict (SHA mismatch), re-read and retry once
-  if (result.statusCode === 409 || result.statusCode === 422) {
-    console.log('SHA conflict on save — retrying with fresh SHA');
-    const fresh = await ghRequest('GET', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`);
-    if (fresh.data && fresh.data.sha) {
-      body.sha = fresh.data.sha;
-      return ghRequest('PUT', `/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`, body);
-    }
-  }
-  return result;
+async function insertEntry(entry) {
+  return sbRequest('POST', 'entries', entry);
+}
+
+async function updateEntry(flightCode, depTime, arrTime, updates) {
+  const path = `entries?flight_code=eq.${encodeURIComponent(flightCode)}&dep_time=eq.${encodeURIComponent(depTime)}&arr_time=eq.${encodeURIComponent(arrTime)}`;
+  return sbRequest('PATCH', path, updates);
+}
+
+async function deleteEntry(flightCode, depTime, arrTime) {
+  const path = `entries?flight_code=eq.${encodeURIComponent(flightCode)}&dep_time=eq.${encodeURIComponent(depTime)}&arr_time=eq.${encodeURIComponent(arrTime)}`;
+  return sbRequest('DELETE', path, null);
+}
+
+async function getActuals(flightCode) {
+  const r = await sbRequest('GET', `actuals?flight_code=eq.${encodeURIComponent(flightCode)}`);
+  return Array.isArray(r.data) && r.data.length ? r.data[0] : null;
+}
+
+async function upsertActuals(flightCode, actualDep, actualArr) {
+  return sbRequest('POST', 'actuals', {
+    flight_code: flightCode,
+    actual_dep: actualDep || null,
+    actual_arr: actualArr || null,
+    updated_at: new Date().toISOString()
+  });
+}
+
+async function getWinner(flightCode) {
+  const r = await sbRequest('GET', `winners?flight_code=eq.${encodeURIComponent(flightCode)}`);
+  return Array.isArray(r.data) && r.data.length ? r.data[0] : null;
+}
+
+async function upsertWinner(flightCode, winnerData) {
+  return sbRequest('POST', 'winners', { flight_code: flightCode, ...winnerData });
 }
 
 // ── FlightAware ──────────────────────────────────────────────────
@@ -80,14 +98,6 @@ function fetchFA(faPath) {
     req.on('error', (e) => resolve({ statusCode: 500, body: JSON.stringify({ error: e.message }) }));
     req.setTimeout(10000, () => { req.destroy(); resolve({ statusCode: 504, body: '{}' }); });
   });
-}
-
-function timeToMins(t) {
-  if (!t) return null;
-  const clean = t.replace(/^[<>]\s*/, '');
-  const parts = clean.split(':').map(Number);
-  if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
-  return parts[0] * 60 + parts[1];
 }
 
 function toLocalTime(iso, offsetHours) {
@@ -110,6 +120,14 @@ function tzOffset(ianaZone) {
     if (diff >  720) diff -= 1440;
     return diff / 60;
   } catch(e) { return 10; }
+}
+
+function timeToMins(t) {
+  if (!t) return null;
+  const clean = t.replace(/^[<>]\s*/, '');
+  const parts = clean.split(':').map(Number);
+  if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+  return parts[0] * 60 + parts[1];
 }
 
 function flightStatus(fl) {
@@ -138,24 +156,15 @@ function flightStatus(fl) {
 
 function getBestFlight(flights) {
   const now = new Date();
-
-  // Active/in-progress flight wins immediately
   let fl = flights.find(f => (f.progress_percent || 0) > 0 && f.progress_percent < 100);
   if (fl) return fl;
-
-  // Find the nearest upcoming or very recent flight (within last 2 hours)
-  // Compare scheduled_out UTC timestamp to now
   const candidates = flights.filter(f => {
     const dep = f.scheduled_out || f.scheduled_off;
     if (!dep) return false;
-    const depTime = new Date(dep).getTime();
-    const diffHours = (depTime - now.getTime()) / (1000 * 60 * 60);
-    // Include flights scheduled up to 24hrs in future or departed up to 2hrs ago
+    const diffHours = (new Date(dep).getTime() - now.getTime()) / (1000 * 60 * 60);
     return diffHours > -2 && diffHours < 24;
   });
-
   if (candidates.length) {
-    // Sort by closest to now
     candidates.sort((a, b) => {
       const at = new Date(a.scheduled_out || a.scheduled_off).getTime();
       const bt = new Date(b.scheduled_out || b.scheduled_off).getTime();
@@ -163,12 +172,20 @@ function getBestFlight(flights) {
     });
     return candidates[0];
   }
+  return flights.find(f => f.status === 'Scheduled') || flights[0];
+}
 
-  // Fallback: most recent scheduled
-  const scheduled = flights.find(f => f.status === 'Scheduled');
-  if (scheduled) return scheduled;
-
-  return flights[0];
+function scoreEntries(entries, actualDep, actualArr) {
+  const adm = timeToMins(actualDep);
+  const aam = timeToMins(actualArr);
+  return entries.map(e => {
+    const dm = timeToMins(e.dep_time);
+    const am = timeToMins(e.arr_time);
+    const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : null;
+    const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : null;
+    const score   = (depDiff !== null && arrDiff !== null) ? depDiff + arrDiff : null;
+    return { ...e, depDiff, arrDiff, score };
+  }).sort((a, b) => (a.score ?? 9999) - (b.score ?? 9999));
 }
 
 const respond = (statusCode, headers, obj) => ({ statusCode, headers, body: JSON.stringify(obj) });
@@ -199,22 +216,20 @@ exports.handler = async (event) => {
     const flights = data.flights || [];
     if (!flights.length) return respond(404, headers, { error: 'Flight not found — check the number' });
     const fl = getBestFlight(flights);
-    const flInfo = flightStatus(fl);
-    // Overlay locked actual times from store if available
-    const store = await loadPicks();
-    const locked = (store.actuals || {})[code] || {};
-    if (locked.actual_dep) flInfo.actual_dep = locked.actual_dep;
-    if (locked.actual_arr) flInfo.actual_arr = locked.actual_arr;
-
+    // Overlay locked actuals from Supabase
+    const actuals = await getActuals(code);
+    const info = flightStatus(fl);
+    if (actuals?.actual_dep) info.actual_dep = actuals.actual_dep;
+    if (actuals?.actual_arr) info.actual_arr = actuals.actual_arr;
     return respond(200, headers, {
       code,
       from: fl.origin?.code_iata || fl.origin?.code || '???',
       to:   fl.destination?.code_iata || fl.destination?.code || '???',
-      ...flInfo
+      ...info
     });
   }
 
-  // GET /status/VA309 — also auto-locks actual times and awards winner
+  // GET /status/VA309
   const statusMatch = p.match(/^\/status\/([A-Z0-9]+)$/i);
   if (statusMatch && method === 'GET') {
     const code = statusMatch[1].toUpperCase();
@@ -224,66 +239,50 @@ exports.handler = async (event) => {
     const fl = getBestFlight(data.flights || [{}]);
     const status = flightStatus(fl);
 
-    // Auto-lock actual times into picks.json the moment we get them
+    // Auto-lock actual times into Supabase
     if (status.actual_dep || status.actual_arr) {
-      const store = await loadPicks();
-      let changed = false;
+      const existing = await getActuals(code);
+      const needsUpdate = !existing || 
+        (status.actual_dep && !existing.actual_dep) || 
+        (status.actual_arr && !existing.actual_arr);
+      
+      if (needsUpdate) {
+        const newDep = status.actual_dep || existing?.actual_dep || null;
+        const newArr = status.actual_arr || existing?.actual_arr || null;
+        await upsertActuals(code, newDep, newArr);
+        console.log(`Locked actuals for ${code}: dep=${newDep} arr=${newArr}`);
 
-      if (!store.actuals) store.actuals = {};
-      if (!store.actuals[code]) store.actuals[code] = {};
-
-      if (status.actual_dep && !store.actuals[code].actual_dep) {
-        store.actuals[code].actual_dep = status.actual_dep;
-        changed = true;
-        console.log('Locked actual_dep for ' + code + ': ' + status.actual_dep);
-      }
-      if (status.actual_arr && !store.actuals[code].actual_arr) {
-        store.actuals[code].actual_arr = status.actual_arr;
-        changed = true;
-        console.log('Locked actual_arr for ' + code + ': ' + status.actual_arr);
-      }
-
-      // Auto-award winner when both times are locked and not yet awarded
-      if (store.actuals[code].actual_dep && store.actuals[code].actual_arr &&
-          !(store.winners || {})[code]) {
-        const entries = (store.flights || {})[code] || {};
-        const entryList = Object.entries(entries);
-        if (entryList.length > 0) {
-          const adm = timeToMins(store.actuals[code].actual_dep);
-          const aam = timeToMins(store.actuals[code].actual_arr);
-          const scored = entryList.map(([combo, entry]) => {
-            const e = typeof entry === 'object' ? entry : { seat: entry, dep: combo.split('|')[0], arr: combo.split('|')[1] };
-            const dm = timeToMins(e.dep);
-            const am = timeToMins(e.arr);
-            const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : 999;
-            const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : 999;
-            return { seat: e.seat, dep: e.dep, arr: e.arr, depDiff, arrDiff, score: depDiff + arrDiff };
-          }).sort((a, b) => a.score - b.score);
-
-          if (!store.winners) store.winners = {};
-          store.winners[code] = {
-            winner: scored[0],
-            allScores: scored,
-            actualDep: store.actuals[code].actual_dep,
-            actualArr: store.actuals[code].actual_arr,
-            publishedAt: new Date().toISOString(),
-            autoAwarded: true
-          };
-          changed = true;
-          console.log('Auto-awarded winner for ' + code + ': Seat ' + scored[0].seat);
+        // Auto-award winner when both locked
+        if (newDep && newArr) {
+          const alreadyWon = await getWinner(code);
+          if (!alreadyWon) {
+            const entries = await getEntries(code);
+            if (entries.length > 0) {
+              const scored = scoreEntries(entries, newDep, newArr);
+              const winner = scored[0];
+              await upsertWinner(code, {
+                winner_seat: winner.seat,
+                winner_dep:  winner.dep_time,
+                winner_arr:  winner.arr_time,
+                winner_score: winner.score,
+                actual_dep: newDep,
+                actual_arr: newArr,
+                all_scores: JSON.stringify(scored),
+                published_at: new Date().toISOString(),
+                auto_awarded: true
+              });
+              console.log(`Auto-awarded winner for ${code}: Seat ${winner.seat} score ${winner.score}`);
+              status.winner = winner;
+            }
+          }
         }
+        status.actual_dep = newDep;
+        status.actual_arr = newArr;
+      } else if (existing) {
+        status.actual_dep = existing.actual_dep || status.actual_dep;
+        status.actual_arr = existing.actual_arr || status.actual_arr;
       }
-
-      if (changed) {
-        const sha = store.sha; delete store.sha;
-        await savePicks(store, sha);
-      }
-
-      // Return actual times from locked store
-      status.actual_dep = store.actuals[code].actual_dep || status.actual_dep;
-      status.actual_arr = store.actuals[code].actual_arr || status.actual_arr;
     }
-
     return respond(200, headers, status);
   }
 
@@ -291,8 +290,10 @@ exports.handler = async (event) => {
   const getPicksMatch = p.match(/^\/picks\/([A-Z0-9]+)$/i);
   if (getPicksMatch && method === 'GET') {
     const code = getPicksMatch[1].toUpperCase();
-    const store = await loadPicks();
-    return respond(200, headers, (store.flights || {})[code] || {});
+    const entries = await getEntries(code);
+    const result = {};
+    entries.forEach(e => { result[`${e.dep_time}|${e.arr_time}`] = e.seat; });
+    return respond(200, headers, result);
   }
 
   // GET /picks/VA309/dep/09:11
@@ -300,13 +301,9 @@ exports.handler = async (event) => {
   if (depPicksMatch && method === 'GET') {
     const code    = depPicksMatch[1].toUpperCase();
     const depTime = decodeURIComponent(depPicksMatch[2]);
-    const store   = await loadPicks();
-    const flightPicks = ((store.flights || {})[code]) || {};
+    const entries = await getEntries(code);
     const arrTaken = {};
-    for (const [combo, entry] of Object.entries(flightPicks)) {
-      const [d, a] = combo.split('|');
-      if (d === depTime) arrTaken[a] = typeof entry === 'object' ? entry.seat : entry;
-    }
+    entries.filter(e => e.dep_time === depTime).forEach(e => { arrTaken[e.arr_time] = e.seat; });
     return respond(200, headers, arrTaken);
   }
 
@@ -314,90 +311,113 @@ exports.handler = async (event) => {
   const postPicksMatch = p.match(/^\/picks\/([A-Z0-9]+)$/i);
   if (postPicksMatch && method === 'POST') {
     const code = postPicksMatch[1].toUpperCase();
-    const { dep, arr, seat, mobile, boardingPass } = JSON.parse(event.body || '{}');
+    const { dep, arr, seat } = JSON.parse(event.body || '{}');
     if (!dep || !arr || !seat) return respond(400, headers, { error: 'Need dep, arr, seat' });
-    const store = await loadPicks();
-    if (!store.flights) store.flights = {};
-    if (!store.flights[code]) store.flights[code] = {};
-    const combo = `${dep}|${arr}`;
-    if (store.flights[code][combo]) {
-      const takenBy = store.flights[code][combo].seat || store.flights[code][combo];
-      return respond(409, headers, { error: 'combo_taken', takenBy });
+    
+    // Check combo not taken
+    const existing = await getEntries(code);
+    const taken = existing.find(e => e.dep_time === dep && e.arr_time === arr);
+    if (taken) return respond(409, headers, { error: 'combo_taken', takenBy: taken.seat });
+
+    // Insert new entry
+    const r = await insertEntry({
+      flight_code: code,
+      seat,
+      dep_time: dep,
+      arr_time: arr,
+      mobile: '',
+      boarding_pass: null,
+      created_at: new Date().toISOString()
+    });
+    if (r.statusCode !== 201) {
+      console.error('Insert failed:', r.statusCode, JSON.stringify(r.data));
+      return respond(500, headers, { error: 'Failed to save entry' });
     }
-    store.flights[code][combo] = { seat, mobile: mobile || '', boardingPass: boardingPass || null, timestamp: new Date().toISOString(), dep, arr };
-    const sha = store.sha;
-    delete store.sha;
-    await savePicks(store, sha);
-    console.log(`Locked: ${code} | ${seat} → ${dep}/${arr}`);
+    console.log(`Saved: ${code} | ${seat} → ${dep}/${arr}`);
     return respond(200, headers, { ok: true });
   }
 
-  // GET /admin?key=AGS2026admin&flight=VA309
+  // POST /picks/VA309/update — add mobile + boarding pass
+  const updateMatch = p.match(/^\/picks\/([A-Z0-9]+)\/update$/i);
+  if (updateMatch && method === 'POST') {
+    const code = updateMatch[1].toUpperCase();
+    const { dep, arr, seat, mobile, boardingPass } = JSON.parse(event.body || '{}');
+    await updateEntry(code, dep, arr, {
+      mobile: mobile || '',
+      boarding_pass: boardingPass || null
+    });
+    return respond(200, headers, { ok: true });
+  }
+
+  // GET /winner/VA309
+  const winnerMatch = p.match(/^\/winner\/([A-Z0-9]+)$/i);
+  if (winnerMatch && method === 'GET') {
+    const code = winnerMatch[1].toUpperCase();
+    const winner = await getWinner(code);
+    if (!winner) return respond(200, headers, { announced: false });
+    return respond(200, headers, {
+      announced: true,
+      winner: {
+        winner: { seat: winner.winner_seat, dep: winner.winner_dep, arr: winner.winner_arr, score: winner.winner_score, depDiff: null, arrDiff: null },
+        actualDep: winner.actual_dep,
+        actualArr: winner.actual_arr,
+        allScores: JSON.parse(winner.all_scores || '[]'),
+        publishedAt: winner.published_at
+      }
+    });
+  }
+
+  // GET /admin
   const adminMatch = p.match(/^\/admin$/i);
   if (adminMatch && method === 'GET') {
     const key    = (event.queryStringParameters || {}).key || '';
     const flight = ((event.queryStringParameters || {}).flight || '').toUpperCase();
     if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
-    const store = await loadPicks();
-    if (flight) return respond(200, headers, { flight, entries: (store.flights || {})[flight] || {}, winners: store.winners || {}, actuals: store.actuals || {} });
-    return respond(200, headers, { flights: store.flights || {}, winners: store.winners || {}, actuals: store.actuals || {} });
+
+    if (flight) {
+      const entries  = await getEntries(flight);
+      const actuals  = await getActuals(flight);
+      const winner   = await getWinner(flight);
+      return respond(200, headers, { flight, entries, actuals, winner });
+    }
+
+    const allEntries = await getAllEntries();
+    const flights = {};
+    allEntries.forEach(e => {
+      if (!flights[e.flight_code]) flights[e.flight_code] = [];
+      flights[e.flight_code].push(e);
+    });
+    return respond(200, headers, { flights });
   }
 
-  // DELETE /admin/picks/VA309/COMBO?key=...
+  // POST /admin/winner — manual publish
+  if (p === '/admin/winner' && method === 'POST') {
+    const body = JSON.parse(event.body || '{}');
+    if (body.key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
+    const { flight, winner, actualDep, actualArr, allScores } = body;
+    await upsertWinner(flight, {
+      winner_seat: winner.seat,
+      winner_dep:  winner.dep,
+      winner_arr:  winner.arr,
+      winner_score: winner.score,
+      actual_dep: actualDep,
+      actual_arr: actualArr,
+      all_scores: JSON.stringify(allScores),
+      published_at: new Date().toISOString(),
+      auto_awarded: false
+    });
+    return respond(200, headers, { ok: true });
+  }
+
+  // DELETE /admin/picks
   const deleteMatch = p.match(/^\/admin\/picks\/([A-Z0-9]+)\/(.+)$/i);
   if (deleteMatch && method === 'DELETE') {
     const key   = (event.queryStringParameters || {}).key || '';
     if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
     const code  = deleteMatch[1].toUpperCase();
     const combo = decodeURIComponent(deleteMatch[2]);
-    const store = await loadPicks();
-    if (store.flights?.[code]?.[combo]) {
-      delete store.flights[code][combo];
-      const sha = store.sha;
-      delete store.sha;
-      await savePicks(store, sha);
-      return respond(200, headers, { ok: true });
-    }
-    return respond(404, headers, { error: 'Entry not found' });
-  }
-
-  // POST /picks/VA309/update — add mobile and boarding pass after boarding page
-  const updatePickMatch = p.match(/^\/picks\/([A-Z0-9]+)\/update$/i);
-  if (updatePickMatch && method === 'POST') {
-    const code = updatePickMatch[1].toUpperCase();
-    const { dep, arr, seat, mobile, boardingPass } = JSON.parse(event.body || '{}');
-    const store = await loadPicks();
-    const combo = `${dep}|${arr}`;
-    if (store.flights?.[code]?.[combo]) {
-      store.flights[code][combo].mobile = mobile || '';
-      if (boardingPass) store.flights[code][combo].boardingPass = boardingPass;
-      const sha = store.sha; delete store.sha;
-      await savePicks(store, sha);
-      console.log('Updated entry with mobile+BP: ' + code + ' ' + seat);
-    }
-    return respond(200, headers, { ok: true });
-  }
-
-  // GET /winner/QF533
-  const getWinnerMatch = p.match(/^\/winner\/([A-Z0-9]+)$/i);
-  if (getWinnerMatch && method === 'GET') {
-    const code = getWinnerMatch[1].toUpperCase();
-    const store = await loadPicks();
-    const winner = (store.winners || {})[code] || null;
-    return respond(200, headers, winner ? { winner, announced: true } : { announced: false });
-  }
-
-  // POST /admin/winner
-  if (p === '/admin/winner' && method === 'POST') {
-    const body = JSON.parse(event.body || '{}');
-    if (body.key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
-    const { flight, winner, actualDep, actualArr, allScores } = body;
-    const store = await loadPicks();
-    if (!store.winners) store.winners = {};
-    store.winners[flight] = { winner, actualDep, actualArr, allScores, publishedAt: new Date().toISOString() };
-    const sha = store.sha; delete store.sha;
-    await savePicks(store, sha);
-    console.log('Winner published: ' + flight + ' seat ' + winner.seat);
+    const [dep, arr] = combo.split('|');
+    await deleteEntry(code, dep, arr);
     return respond(200, headers, { ok: true });
   }
 
