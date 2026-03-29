@@ -1175,7 +1175,7 @@
     sp.classList.add('active');
     window.scrollTo(0, 0);
     await refreshLivePicks(flightCode);
-    startStatusPolling(flightCode);
+    startStatusPolling(currentFlight.key || flightCode);
   }
 
   async function refreshLivePicks(flightCode) {
@@ -1510,7 +1510,7 @@
     if (existingResults) existingResults.remove();
 
     showPage('page-game');
-    startStatusPolling(f.code);
+    startStatusPolling(f.key || f.code);
   }
 
   function toTime(mins) {
