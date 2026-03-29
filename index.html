@@ -1292,9 +1292,8 @@
         </button>
       </div>`;
 
-    const seat = document.getElementById('bp-seat').textContent.trim();
     // Redirect to live picks page for this flight
-    showLivePicks(currentFlight.code);
+    window.location.href = "/?flight=" + encodeURIComponent(currentFlight.code);
   }
 
   function lockoutFlight(data) {
@@ -1786,9 +1785,8 @@
       } catch(e) { console.error('Update error:', e); }
     }
 
-    const seat = document.getElementById('bp-seat').textContent.trim();
     // Redirect to live picks page for this flight
-    showLivePicks(currentFlight.code);
+    window.location.href = "/?flight=" + encodeURIComponent(currentFlight.code);
   }
 
   // On load: check URL param ?flight=QF529 and show live picks page
