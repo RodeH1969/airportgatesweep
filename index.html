@@ -1133,27 +1133,41 @@
   }
 
   async function pollStatus(flightCode) {
-    try {
-      const r = await fetch(`/.netlify/functions/api/status/${flightCode}`);
-      if (!r.ok) return;
-      const data = await r.json();
-      if (data.state === 'departed' || data.state === 'arrived') {
-        lockoutFlight(data);
-      }
-    } catch(e) {}
+    const onPicksPage = document.getElementById('page-success').classList.contains('active');
 
-    // Also check if winner has been announced
+    if (!onPicksPage) {
+      // On the entry page — handle lockout
+      try {
+        const r = await fetch(`/.netlify/functions/api/status/${flightCode}`);
+        if (!r.ok) return;
+        const data = await r.json();
+        if (data.state === 'departed' || data.state === 'arrived') {
+          lockoutFlight(data);
+        }
+      } catch(e) {}
+    }
+
+    // Always check if winner has been announced (works on picks page too)
     try {
       const r2 = await fetch(`/.netlify/functions/api/winner/${flightCode}`);
       if (!r2.ok) return;
       const wd = await r2.json();
-      if (wd.announced) showWinnerScreen(wd, flightCode);
+      if (wd.announced) {
+        showWinnerScreen(wd, flightCode);
+      } else if (onPicksPage) {
+        // Still in flight — just refresh picks silently
+        refreshLivePicks(flightCode);
+      }
     } catch(e) {}
   }
 
   async function showLivePicks(flightCode) {
+    // flightCode may be "QF559" or "QF559_2026-03-30"
+    const _codeOnly = flightCode.split('_')[0];
     history.replaceState(null, '', '/?flight=' + flightCode);
-    currentFlight = { code: flightCode };
+    if (!currentFlight || currentFlight.key !== flightCode) {
+      currentFlight = { code: _codeOnly, key: flightCode };
+    }
     // Hide all pages and show success immediately
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const sp = document.getElementById('page-success');
@@ -1166,11 +1180,11 @@
 
   async function refreshLivePicks(flightCode) {
     try {
-      const wr = await fetch('/.netlify/functions/api/winner/' + flightCode);
+      const wr = await fetch('/.netlify/functions/api/winner/' + (currentFlight.key || flightCode));
       const wd = await wr.json();
       if (wd.announced) { showWinnerScreen(wd, flightCode); return; }
 
-      const pr = await fetch('/.netlify/functions/api/picks/' + flightCode);
+      const pr = await fetch('/.netlify/functions/api/picks/' + (currentFlight.key || flightCode));
       const picks = await pr.json();
       const entries = Object.entries(picks).map(([combo, seat]) => {
         const [dep, arr] = combo.split('|');
@@ -1300,7 +1314,7 @@
       </div>`;
 
     // Redirect to live picks page for this flight
-    window.location.href = "/?flight=" + encodeURIComponent(currentFlight.code);
+    window.location.href = "/?flight=" + encodeURIComponent(currentFlight.key || currentFlight.code);
   }
 
   function lockoutFlight(data) {
@@ -1442,6 +1456,8 @@
 
       const flight = {
         code: q,
+        key:  data.flight_key || q,   // "QF559_2026-03-30"
+        date: data.flight_date || '',
         from: data.from,
         to:   data.to,
         dep,
@@ -1461,6 +1477,7 @@
 
   function showGame(f) {
     currentFlight = f;
+    if (!currentFlight.key) currentFlight.key = currentFlight.code;
     locked = false;
     myDep = null;
     myArr = null;
@@ -1799,7 +1816,7 @@
     }
 
     // Redirect to live picks page for this flight
-    window.location.href = "/?flight=" + encodeURIComponent(currentFlight.code);
+    window.location.href = "/?flight=" + encodeURIComponent(currentFlight.key || currentFlight.code);
   }
 
   // On load: check URL param ?flight=QF529 and show live picks page
@@ -1807,7 +1824,12 @@
   const _urlParams = new URLSearchParams(window.location.search);
   const _flightParam = _urlParams.get('flight');
   if (_flightParam) {
-    showLivePicks(_flightParam.toUpperCase());
+    const _key = _flightParam.toUpperCase();
+    // Parse code from key (QF559 or QF559_2026-03-30)
+    const _codeMatch = _key.match(/^([A-Z0-9]+)/);
+    const _code = _codeMatch ? _codeMatch[1] : _key;
+    currentFlight = { code: _code, key: _key };
+    showLivePicks(_key);
   }
 
 </script>
