@@ -797,8 +797,15 @@
   <div class="search-panel" style="margin-top:24px;padding:24px 20px;">
     <h2>Enter your flight number</h2>
     <div class="search-wrap">
-      <input id="search-input" class="search-input" placeholder="e.g. QF531">
+      <input id="search-input" class="search-input" placeholder="e.g. QF531" onkeydown="if(event.key==='Enter')filterFlights()">
       <button class="search-btn" onclick="filterFlights()">Go</button>
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <button onclick="viewPicksOnly()" style="background:none;border:none;color:#2563eb;font-family:Nunito,sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;text-decoration:underline;">
+        👀 Just view picks for a flight →
+      </button>
+    </div>
+    <div style="display:none">
     </div>
   </div>
 </section>
@@ -1396,6 +1403,12 @@
       .catch(() => {});
   }
 
+  function viewPicksOnly() {
+    const q = document.getElementById('search-input').value.trim().toUpperCase();
+    if (!q) { showToast('Enter a flight number first'); return; }
+    showLivePicks(q);
+  }
+
   async function filterFlights() {
     const q = document.getElementById('search-input').value.trim().toUpperCase();
     if (!q) { showToast('Enter a flight number'); return; }
@@ -1418,9 +1431,9 @@
 
       const data = await res.json();
 
-      // Check if already departed — block entry
+      // Check if already departed — show picks instead
       if (data.state === 'departed' || data.state === 'arrived') {
-        showToast(`❌ ${q} has already ${data.state} — entries closed`);
+        showLivePicks(q);
         return;
       }
 
