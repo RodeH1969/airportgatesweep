@@ -1361,7 +1361,7 @@
 
   function showWinnerCalc(actualDep, actualArr) {
     // Get all picks for this flight from server and calculate scores
-    fetch(`/.netlify/functions/api/picks/${currentFlight.code}`)
+    fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}`)
       .then(r => r.json())
       .then(allPicks => {
         const actualDepMins = timeToMins(actualDep);
@@ -1417,9 +1417,22 @@
       .catch(() => {});
   }
 
-  function viewPicksOnly() {
+  async function viewPicksOnly() {
     const q = document.getElementById('search-input').value.trim().toUpperCase();
     if (!q) { showToast('Enter a flight number first'); return; }
+    // Look up flight to get the dated key (e.g. QF559_2026-03-31)
+    try {
+      const res = await fetch(`/.netlify/functions/api/flight/${encodeURIComponent(q)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const key = data.flight_key || q;
+        currentFlight = { code: q, key: key, date: data.flight_date || '' };
+        showLivePicks(key);
+        return;
+      }
+    } catch(e) {}
+    // Fallback — show picks with just the code
+    currentFlight = { code: q, key: q };
     showLivePicks(q);
   }
 
@@ -1619,7 +1632,7 @@
 
     let takenMap = {};
     try {
-      const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.code}/dep/${encodeURIComponent(time)}`);
+      const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}/dep/${encodeURIComponent(time)}`);
       takenMap = await r.json();
     } catch(e) { /* server may not be running, just show empty */ }
 
@@ -1691,7 +1704,7 @@
 
     // Save entry to server
     try {
-      const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.code}`, {
+      const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dep: myDep, arr: myArr, seat })
@@ -1700,7 +1713,7 @@
         const data = await r.json();
         showToast(`That dep+arr combo is taken by ${data.takenBy} — pick again`);
         // Refresh arr grid to show updated taken slots
-        const r2 = await fetch(`/.netlify/functions/api/picks/${currentFlight.code}/dep/${encodeURIComponent(myDep)}`);
+        const r2 = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}/dep/${encodeURIComponent(myDep)}`);
         const takenMap = await r2.json();
         buildArrGrid(takenMap);
         myArr = null;
@@ -1807,7 +1820,7 @@
     // Update the existing entry with mobile + boarding pass
     if (mobile || boardingPass) {
       try {
-        await fetch(`/.netlify/functions/api/picks/${currentFlight.code}/update`, {
+        await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}/update`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dep: myDep, arr: myArr, seat: document.getElementById('bp-seat').textContent.trim(), mobile, boardingPass })
