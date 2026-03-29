@@ -411,6 +411,19 @@ exports.handler = async (event) => {
     return respond(200, headers, { ok: true });
   }
 
+  // GET /admin/bp/QF529/11:38/14:19 — fetch boarding pass for one entry
+  const bpMatch = p.match(/^\/admin\/bp\/([A-Z0-9]+)\/(.+)\/(.+)$/i);
+  if (bpMatch && method === 'GET') {
+    const key = (event.queryStringParameters || {}).key || '';
+    if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
+    const code = bpMatch[1].toUpperCase();
+    const dep  = decodeURIComponent(bpMatch[2]);
+    const arr  = decodeURIComponent(bpMatch[3]);
+    const entries = await getEntries(code);
+    const entry = entries.find(e => e.dep_time === dep && e.arr_time === arr);
+    return respond(200, headers, { boarding_pass: entry?.boarding_pass || null });
+  }
+
   // DELETE /admin/picks
   const deleteMatch = p.match(/^\/admin\/picks\/([A-Z0-9]+)\/(.+)$/i);
   if (deleteMatch && method === 'DELETE') {

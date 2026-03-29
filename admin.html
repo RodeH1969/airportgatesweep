@@ -322,7 +322,7 @@
             <td class="time">${e.arr_time||e.arr||'—'}</td>
             <td style="color:#475569;font-size:0.72rem;">${(e.created_at||e.timestamp) ? new Date(e.created_at||e.timestamp).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
             ${hasScores ? `<td class="score ${i===0?'winner':''}">${e.total!==null?`${e.depDiff}m + ${e.arrDiff}m = <strong>${e.total}m</strong>`:'—'}</td>` : ''}
-            <td>${(e.has_boarding_pass||e.boarding_pass||e.boardingPass) ? `<img src="${e.boarding_pass||e.boardingPass||''}" onclick="showBP(this.src)" style="width:40px;height:28px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid #334155;" title="Click to view">` : '—'}</td>
+            <td>${(e.has_boarding_pass||e.boarding_pass||e.boardingPass) ? `<button onclick="fetchAndShowBP('${code}','${e.dep_time||e.dep}','${e.arr_time||e.arr}')" style="background:#334155;border:none;color:#60a5fa;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:700;">📋 View</button>` : '—'}</td>
             <td><button class="del-btn" onclick="deleteEntry('${code}','${encodeURIComponent(e.combo)}')">✕</button></td>
           </tr>`).join('')}
         </tbody>
@@ -480,6 +480,15 @@
     modal.innerHTML = `<img src="${src}" style="max-width:95vw;max-height:95vh;border-radius:8px;">`;
     modal.onclick = () => modal.remove();
     document.body.appendChild(modal);
+  }
+
+  async function fetchAndShowBP(code, dep, arr) {
+    try {
+      const r = await fetch(`${BASE}/admin/bp/${code}/${encodeURIComponent(dep)}/${encodeURIComponent(arr)}?key=${encodeURIComponent(adminKey)}`);
+      const d = await r.json();
+      if (d.boarding_pass) showBP(d.boarding_pass);
+      else showToast('No boarding pass for this entry');
+    } catch(e) { showToast('Could not load boarding pass'); }
   }
 
   function showToast(msg) {
