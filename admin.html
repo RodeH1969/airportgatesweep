@@ -437,8 +437,8 @@
             <tr style="${i===0?'background:rgba(168,85,247,0.1);':''}">
               <td style="padding:5px 10px;">${i===0?'🏆':i===1?'🥈':i===2?'🥉':i+1}</td>
               <td style="padding:5px 10px;font-weight:900;color:${i===0?'#a855f7':'#e2e8f0'};">${s.seat}</td>
-              <td style="padding:5px 10px;color:#60a5fa;">${s.dep}</td>
-              <td style="padding:5px 10px;color:#60a5fa;">${s.arr}</td>
+              <td style="padding:5px 10px;color:#60a5fa;">${s.dep || s.dep_time || '—'}</td>
+              <td style="padding:5px 10px;color:#60a5fa;">${s.arr || s.arr_time || '—'}</td>
               <td style="padding:5px 10px;font-weight:${i===0?'900':'400'};color:${i===0?'#a855f7':'#94a3b8'};">${s.score !== null ? s.score+'m' : '—'}</td>
             </tr>`).join('');
 
