@@ -1184,12 +1184,12 @@
 
   async function refreshLivePicks(flightCode) {
     try {
-      const wr = await fetch('/.netlify/functions/api/winner/' + (currentFlight.key || flightCode));
+      const wr = await fetch('/.netlify/functions/api/winner/' + (currentFlight.key || flightCode) + '?fa_flight_id=' + encodeURIComponent(currentFlight.fa_flight_id||''));
       const wd = await wr.json();
       if (wd.announced && wd.cancelled) { showCancelledScreen(flightCode); return; }
       if (wd.announced) { showWinnerScreen(wd, flightCode); return; }
 
-      const pr = await fetch('/.netlify/functions/api/picks/' + (currentFlight.key || flightCode));
+      const pr = await fetch('/.netlify/functions/api/picks/' + (currentFlight.key || flightCode) + '?fa_flight_id=' + encodeURIComponent(currentFlight.fa_flight_id||''));
       const picks = await pr.json();
       const entries = Object.entries(picks).map(([combo, seat]) => {
         const [dep, arr] = combo.split('|');
@@ -1396,7 +1396,7 @@
 
   function showWinnerCalc(actualDep, actualArr) {
     // Get all picks for this flight from server and calculate scores
-    fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}`)
+    fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}?fa_flight_id=${encodeURIComponent(currentFlight.fa_flight_id||'')}`)
       .then(r => r.json())
       .then(allPicks => {
         const actualDepMins = timeToMins(actualDep);
@@ -1503,14 +1503,15 @@
       const arr = data.scheduled_arr || data.estimated_arr || '--:--';
 
       const flight = {
-        code: q,
-        key:  data.flight_key || q,   // "QF559_2026-03-30"
-        date: data.flight_date || '',
-        from: data.from,
-        to:   data.to,
+        code:        q,
+        key:         data.flight_key || q,   // "QF559_2026-03-30"
+        date:        data.flight_date || '',
+        fa_flight_id: data.fa_flight_id || '',
+        from:        data.from,
+        to:          data.to,
         dep,
         arr,
-        state: data.state
+        state:       data.state
       };
       showGame(flight);
 
@@ -1667,7 +1668,7 @@
 
     let takenMap = {};
     try {
-      const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}/dep/${encodeURIComponent(time)}`);
+      const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}/dep/${encodeURIComponent(time)}?fa_flight_id=${encodeURIComponent(currentFlight.fa_flight_id||'')}`);
       takenMap = await r.json();
     } catch(e) { /* server may not be running, just show empty */ }
 
@@ -1742,13 +1743,13 @@
       const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dep: myDep, arr: myArr, seat })
+        body: JSON.stringify({ dep: myDep, arr: myArr, seat, fa_flight_id: currentFlight.fa_flight_id || '' })
       });
       if (r.status === 409) {
         const data = await r.json();
         showToast(`That dep+arr combo is taken by ${data.takenBy} — pick again`);
         // Refresh arr grid to show updated taken slots
-        const r2 = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}/dep/${encodeURIComponent(myDep)}`);
+        const r2 = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}/dep/${encodeURIComponent(myDep)}?fa_flight_id=${encodeURIComponent(currentFlight.fa_flight_id||'')}`);
         const takenMap = await r2.json();
         buildArrGrid(takenMap);
         myArr = null;
@@ -1858,7 +1859,7 @@
         await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}/update`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dep: myDep, arr: myArr, seat: document.getElementById('bp-seat').textContent.trim(), mobile, boardingPass })
+          body: JSON.stringify({ dep: myDep, arr: myArr, seat: document.getElementById('bp-seat').textContent.trim(), mobile, boardingPass, fa_flight_id: currentFlight.fa_flight_id || '' })
         });
       } catch(e) { console.error('Update error:', e); }
     }

@@ -29,13 +29,15 @@ function sbRequest(method, path, body) {
         catch(e) { resolve({ statusCode: res.statusCode, data: [] }); }
       });
     });
-    req.on('error', (e) => resolve({ statusCode: 500, data: [] }));
+    req.on('error', () => resolve({ statusCode: 500, data: [] }));
     if (payload) req.write(payload);
     req.end();
   });
 }
 
 // ── Flight key helpers ───────────────────────────────────────────
+// fa_flight_id is the TRUE unique key (e.g. ZL6852-1774800000-airline-0001)
+// flight_key (code_date) is the display/grouping key
 function parseFlightKey(raw) {
   const str = (raw || '').toUpperCase();
   const m = str.match(/^([A-Z0-9]+)_(\d{4}-\d{2}-\d{2})$/);
@@ -47,34 +49,36 @@ function makeFlightKey(code, date) {
   return date ? `${code}_${date}` : code;
 }
 
+// Filter by fa_flight_id if available, else fall back to code+date
+function faIdFilter(faId) {
+  return `fa_flight_id=eq.${encodeURIComponent(faId)}`;
+}
+
 function codeFilter(code, date) {
   let f = `flight_code=eq.${encodeURIComponent(code)}`;
   if (date) f += `&flight_date=eq.${encodeURIComponent(date)}`;
   return f;
 }
 
+// Use fa_flight_id as primary filter if we have it
+function bestFilter(faId, code, date) {
+  return faId ? faIdFilter(faId) : codeFilter(code, date);
+}
+
 // ── DB helpers ───────────────────────────────────────────────────
-async function getEntries(code, date) {
-  const r = await sbRequest('GET', `entries?${codeFilter(code, date)}&order=created_at.asc&select=id,flight_code,flight_date,seat,dep_time,arr_time,mobile,created_at`);
+async function getEntries(code, date, faId) {
+  const filter = bestFilter(faId, code, date);
+  const r = await sbRequest('GET', `entries?${filter}&order=created_at.asc&select=id,flight_code,flight_date,fa_flight_id,seat,dep_time,arr_time,mobile,created_at`);
   return Array.isArray(r.data) ? r.data : [];
 }
 
 async function getAllEntries() {
-  const r = await sbRequest('GET', 'entries?order=created_at.asc&select=id,flight_code,flight_date,seat,dep_time,arr_time,mobile,created_at');
+  const r = await sbRequest('GET', 'entries?order=created_at.asc&select=id,flight_code,flight_date,fa_flight_id,seat,dep_time,arr_time,mobile,created_at');
   return Array.isArray(r.data) ? r.data : [];
 }
 
-async function getBPFlags(code, date) {
-  // Fetch only seat+dep+arr+whether boarding_pass is non-null - lightweight
-  const r = await sbRequest('GET', `entries?${codeFilter(code, date)}&select=dep_time,arr_time,boarding_pass`);
-  const rows = Array.isArray(r.data) ? r.data : [];
-  const flags = {};
-  rows.forEach(e => { flags[`${e.dep_time}|${e.arr_time}`] = !!e.boarding_pass; });
-  return flags;
-}
-
 async function getAllBPFlags() {
-  const r = await sbRequest('GET', 'entries?select=flight_code,flight_date,dep_time,arr_time,boarding_pass');
+  const r = await sbRequest('GET', 'entries?select=flight_code,flight_date,fa_flight_id,dep_time,arr_time,boarding_pass');
   const rows = Array.isArray(r.data) ? r.data : [];
   const flags = {};
   rows.forEach(e => {
@@ -84,38 +88,44 @@ async function getAllBPFlags() {
   });
   return flags;
 }
+
 async function insertEntry(entry) {
   return sbRequest('POST', 'entries', entry);
 }
 
-async function updateEntry(code, date, depTime, arrTime, updates) {
-  const path = `entries?${codeFilter(code, date)}&dep_time=eq.${encodeURIComponent(depTime)}&arr_time=eq.${encodeURIComponent(arrTime)}`;
+async function updateEntry(code, date, depTime, arrTime, updates, faId) {
+  const filter = bestFilter(faId, code, date);
+  const path = `entries?${filter}&dep_time=eq.${encodeURIComponent(depTime)}&arr_time=eq.${encodeURIComponent(arrTime)}`;
   return sbRequest('PATCH', path, updates);
 }
 
-async function deleteEntry(code, date, depTime, arrTime) {
+async function deleteEntryDB(code, date, depTime, arrTime) {
   const path = `entries?${codeFilter(code, date)}&dep_time=eq.${encodeURIComponent(depTime)}&arr_time=eq.${encodeURIComponent(arrTime)}`;
   return sbRequest('DELETE', path, null);
 }
 
-async function getActuals(code, date) {
-  const r = await sbRequest('GET', `actuals?${codeFilter(code, date)}`);
+async function getActuals(code, date, faId) {
+  const filter = bestFilter(faId, code, date);
+  const r = await sbRequest('GET', `actuals?${filter}`);
   return Array.isArray(r.data) && r.data.length ? r.data[0] : null;
 }
 
-async function upsertActuals(code, date, actualDep, actualArr) {
-  await sbRequest('DELETE', `actuals?${codeFilter(code, date)}`, null);
+async function upsertActuals(code, date, actualDep, actualArr, faId) {
+  const filter = bestFilter(faId, code, date);
+  await sbRequest('DELETE', `actuals?${filter}`, null);
   return sbRequest('POST', 'actuals', {
-    flight_code: code,
-    flight_date: date || '',
-    actual_dep: actualDep || null,
-    actual_arr: actualArr || null,
-    updated_at: new Date().toISOString()
+    flight_code:  code,
+    flight_date:  date || '',
+    fa_flight_id: faId || '',
+    actual_dep:   actualDep || null,
+    actual_arr:   actualArr || null,
+    updated_at:   new Date().toISOString()
   });
 }
 
-async function getWinner(code, date) {
-  const r = await sbRequest('GET', `winners?${codeFilter(code, date)}`);
+async function getWinner(code, date, faId) {
+  const filter = bestFilter(faId, code, date);
+  const r = await sbRequest('GET', `winners?${filter}`);
   return Array.isArray(r.data) && r.data.length ? r.data[0] : null;
 }
 
@@ -124,19 +134,26 @@ async function getAllWinners() {
   return Array.isArray(r.data) ? r.data : [];
 }
 
-async function upsertWinner(code, date, winnerData) {
-  await sbRequest('DELETE', `winners?${codeFilter(code, date)}`, null);
-  return sbRequest('POST', 'winners', { flight_code: code, flight_date: date || '', ...winnerData });
+async function upsertWinner(code, date, winnerData, faId) {
+  const filter = bestFilter(faId, code, date);
+  await sbRequest('DELETE', `winners?${filter}`, null);
+  return sbRequest('POST', 'winners', {
+    flight_code:  code,
+    flight_date:  date || '',
+    fa_flight_id: faId || '',
+    ...winnerData
+  });
 }
 
 // Auto-award winner when both actuals are available
-async function maybeAwardWinner(code, date, depTime, arrTime) {
-  const alreadyWon = await getWinner(code, date);
-  if (alreadyWon) return alreadyWon; // already awarded
-  const entries = await getEntries(code, date);
+async function maybeAwardWinner(code, date, depTime, arrTime, faId) {
+  const alreadyWon = await getWinner(code, date, faId);
+  if (alreadyWon) return alreadyWon;
+  const entries = await getEntries(code, date, faId);
   if (!entries.length) return null;
   const scored = scoreEntries(entries, depTime, arrTime);
   const winner = scored[0];
+  if (winner.score === null) return null;
   await upsertWinner(code, date, {
     winner_seat:  winner.seat,
     winner_dep:   winner.dep_time,
@@ -148,8 +165,8 @@ async function maybeAwardWinner(code, date, depTime, arrTime) {
     published_at: new Date().toISOString(),
     auto_awarded: true,
     cancelled:    false
-  });
-  console.log(`Winner awarded ${code} ${date}: Seat ${winner.seat} score ${winner.score}`);
+  }, faId);
+  console.log(`Winner awarded ${code} ${date} [${faId}]: Seat ${winner.seat} score ${winner.score}`);
   return winner;
 }
 
@@ -165,7 +182,7 @@ function fetchFA(faPath) {
       res.on('data', c => body += c);
       res.on('end', () => resolve({ statusCode: res.statusCode, body }));
     });
-    req.on('error', (e) => resolve({ statusCode: 500, body: '{}' }));
+    req.on('error', () => resolve({ statusCode: 500, body: '{}' }));
     req.setTimeout(10000, () => { req.destroy(); resolve({ statusCode: 504, body: '{}' }); });
   });
 }
@@ -221,13 +238,14 @@ function flightStatus(fl) {
     status.includes('airborne') || fl.progress_percent > 0
   ) { state = 'departed'; }
 
-  const depTz = tzOffset(fl.origin?.timezone || 'Australia/Brisbane');
-  const arrTz = tzOffset(fl.destination?.timezone || 'Australia/Brisbane');
+  const depTz  = tzOffset(fl.origin?.timezone      || 'Australia/Brisbane');
+  const arrTz  = tzOffset(fl.destination?.timezone  || 'Australia/Brisbane');
   const depIso = fl.scheduled_out || fl.scheduled_off || fl.actual_out || fl.actual_off;
 
   return {
     state,
-    status: fl.status || '',
+    status:        fl.status || '',
+    fa_flight_id:  fl.fa_flight_id || '',
     flight_date:   toLocalDate(depIso, depTz),
     actual_dep:    toLocalTime(fl.actual_out || fl.actual_off, depTz),
     actual_arr:    toLocalTime(fl.actual_in  || fl.actual_on,  arrTz),
@@ -240,10 +258,8 @@ function flightStatus(fl) {
 
 function getBestFlight(flights) {
   const now = new Date();
-  // 1. In-progress flight
   let fl = flights.find(f => (f.progress_percent || 0) > 0 && f.progress_percent < 100);
   if (fl) return fl;
-  // 2. Closest departure within -2h to +24h
   const candidates = flights.filter(f => {
     const dep = f.scheduled_out || f.scheduled_off;
     if (!dep) return false;
@@ -265,8 +281,8 @@ function scoreEntries(entries, actualDep, actualArr) {
   const adm = timeToMins(actualDep);
   const aam = timeToMins(actualArr);
   return entries.map(e => {
-    const dm = timeToMins(e.dep_time);
-    const am = timeToMins(e.arr_time);
+    const dm      = timeToMins(e.dep_time);
+    const am      = timeToMins(e.arr_time);
     const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : null;
     const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : null;
     const score   = (depDiff !== null && arrDiff !== null) ? depDiff + arrDiff : null;
@@ -316,15 +332,17 @@ exports.handler = async (event) => {
     const data = JSON.parse(fa.body);
     const flights = data.flights || [];
     if (!flights.length) return respond(404, H, { error: 'Flight not found — check the number' });
-    const fl = getBestFlight(flights);
-    const info = flightStatus(fl);
+    const fl      = getBestFlight(flights);
+    const info    = flightStatus(fl);
     const useDate = date || info.flight_date;
-    // Overlay locked actuals from Supabase — these are always authoritative
-    const actuals = await getActuals(code, useDate);
+    const faId    = fl.fa_flight_id || '';
+    // Overlay locked actuals from Supabase — always authoritative
+    const actuals = await getActuals(code, useDate, faId);
     if (actuals?.actual_dep) info.actual_dep = actuals.actual_dep;
     if (actuals?.actual_arr) info.actual_arr = actuals.actual_arr;
     info.flight_date = useDate;
     info.flight_key  = makeFlightKey(code, useDate);
+    info.fa_flight_id = faId;
     return respond(200, H, {
       code,
       from: fl.origin?.code_iata || fl.origin?.code || '???',
@@ -333,33 +351,46 @@ exports.handler = async (event) => {
     });
   }
 
-  // ── GET /status/:key — polls for departed/arrived, auto-locks, auto-awards ──
+  // ── GET /status/:key — used by player polling ─────────────────
   const statusMatch = p.match(/^\/status\/([A-Z0-9_-]+)$/i);
   if (statusMatch && method === 'GET') {
     const { code, date } = parseFlightKey(statusMatch[1]);
-    const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(code)}?max_pages=1`);
-    if (fa.statusCode !== 200) return respond(fa.statusCode, H, { error: 'FA error' });
-    const data = JSON.parse(fa.body);
-    const fl = getBestFlight(data.flights || [{}]);
-    const info = flightStatus(fl);
+    // Try to find by fa_flight_id stored in actuals first
+    const existingActuals = await getActuals(code, date, null);
+    const faId = existingActuals?.fa_flight_id || null;
+
+    let fd;
+    if (faId) {
+      // Query FA directly by unique ID — zero ambiguity
+      const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(faId)}`);
+      if (fa.statusCode === 200) {
+        const data = JSON.parse(fa.body);
+        fd = (data.flights || [data])[0] || {};
+      }
+    }
+    if (!fd) {
+      const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(code)}?max_pages=1`);
+      if (fa.statusCode !== 200) return respond(fa.statusCode, H, { error: 'FA error' });
+      const data = JSON.parse(fa.body);
+      fd = getBestFlight(data.flights || [{}]);
+    }
+
+    const info    = flightStatus(fd);
     const useDate = date || info.flight_date;
+    const useFaId = fd.fa_flight_id || faId || '';
+    const existing = existingActuals;
 
-    // Always check Supabase actuals first — they are the locked truth
-    const existing = await getActuals(code, useDate);
-
-    // If FA has new data, lock it permanently (never overwrite existing with null)
     const newDep = info.actual_dep || existing?.actual_dep || null;
     const newArr = info.actual_arr || existing?.actual_arr || null;
 
     if (newDep || newArr) {
       const hasNew = (newDep && !existing?.actual_dep) || (newArr && !existing?.actual_arr);
       if (hasNew) {
-        await upsertActuals(code, useDate, newDep, newArr);
-        console.log(`Locked actuals ${code} ${useDate}: dep=${newDep} arr=${newArr}`);
+        await upsertActuals(code, useDate, newDep, newArr, useFaId);
+        console.log(`Locked actuals ${code} ${useDate} [${useFaId}]: dep=${newDep} arr=${newArr}`);
       }
-      // Auto-award winner when both times are locked
       if (newDep && newArr) {
-        await maybeAwardWinner(code, useDate, newDep, newArr);
+        await maybeAwardWinner(code, useDate, newDep, newArr, useFaId);
       }
     }
 
@@ -375,7 +406,9 @@ exports.handler = async (event) => {
   const getPicksMatch = p.match(/^\/picks\/([A-Z0-9_-]+)$/i);
   if (getPicksMatch && method === 'GET') {
     const { code, date } = parseFlightKey(getPicksMatch[1]);
-    const entries = await getEntries(code, date);
+    const qs    = event.queryStringParameters || {};
+    const faId  = qs.fa_flight_id || null;
+    const entries = await getEntries(code, date, faId);
     const result = {};
     entries.forEach(e => { result[`${e.dep_time}|${e.arr_time}`] = e.seat; });
     return respond(200, H, result);
@@ -385,9 +418,11 @@ exports.handler = async (event) => {
   const depPicksMatch = p.match(/^\/picks\/([A-Z0-9_-]+)\/dep\/(.+)$/i);
   if (depPicksMatch && method === 'GET') {
     const { code, date } = parseFlightKey(depPicksMatch[1]);
+    const qs      = event.queryStringParameters || {};
+    const faId    = qs.fa_flight_id || null;
     const depTime = decodeURIComponent(depPicksMatch[2]);
-    const entries = await getEntries(code, date);
-    const taken = {};
+    const entries = await getEntries(code, date, faId);
+    const taken   = {};
     entries.filter(e => e.dep_time === depTime).forEach(e => { taken[e.arr_time] = e.seat; });
     return respond(200, H, taken);
   }
@@ -396,13 +431,15 @@ exports.handler = async (event) => {
   const postPicksMatch = p.match(/^\/picks\/([A-Z0-9_-]+)$/i);
   if (postPicksMatch && method === 'POST') {
     const { code, date } = parseFlightKey(postPicksMatch[1]);
-    const { dep, arr, seat } = JSON.parse(event.body || '{}');
+    const { dep, arr, seat, fa_flight_id: faId } = JSON.parse(event.body || '{}');
     if (!dep || !arr || !seat) return respond(400, H, { error: 'Need dep, arr, seat' });
-    const existing = await getEntries(code, date);
-    const taken = existing.find(e => e.dep_time === dep && e.arr_time === arr);
+    const existing = await getEntries(code, date, faId || null);
+    const taken    = existing.find(e => e.dep_time === dep && e.arr_time === arr);
     if (taken) return respond(409, H, { error: 'combo_taken', takenBy: taken.seat });
     const r = await insertEntry({
-      flight_code: code, flight_date: date || '',
+      flight_code:  code,
+      flight_date:  date || '',
+      fa_flight_id: faId || '',
       seat, dep_time: dep, arr_time: arr,
       mobile: '', boarding_pass: null,
       created_at: new Date().toISOString()
@@ -415,8 +452,8 @@ exports.handler = async (event) => {
   const updateMatch = p.match(/^\/picks\/([A-Z0-9_-]+)\/update$/i);
   if (updateMatch && method === 'POST') {
     const { code, date } = parseFlightKey(updateMatch[1]);
-    const { dep, arr, mobile, boardingPass } = JSON.parse(event.body || '{}');
-    await updateEntry(code, date, dep, arr, { mobile: mobile || '', boarding_pass: boardingPass || null });
+    const { dep, arr, mobile, boardingPass, fa_flight_id: faId } = JSON.parse(event.body || '{}');
+    await updateEntry(code, date, dep, arr, { mobile: mobile || '', boarding_pass: boardingPass || null }, faId || null);
     return respond(200, H, { ok: true });
   }
 
@@ -424,7 +461,9 @@ exports.handler = async (event) => {
   const winnerMatch = p.match(/^\/winner\/([A-Z0-9_-]+)$/i);
   if (winnerMatch && method === 'GET') {
     const { code, date } = parseFlightKey(winnerMatch[1]);
-    const w = await getWinner(code, date);
+    const qs   = event.queryStringParameters || {};
+    const faId = qs.fa_flight_id || null;
+    const w    = await getWinner(code, date, faId);
     return respond(200, H, winnerResponse(w));
   }
 
@@ -438,7 +477,7 @@ exports.handler = async (event) => {
     if (flight) {
       const { code, date } = parseFlightKey(flight);
       const [entries, actuals, winner] = await Promise.all([
-        getEntries(code, date), getActuals(code, date), getWinner(code, date)
+        getEntries(code, date, null), getActuals(code, date, null), getWinner(code, date, null)
       ]);
       return respond(200, H, { flight, entries, actuals, winner });
     }
@@ -455,35 +494,17 @@ exports.handler = async (event) => {
     allWinnerRows.forEach(w => {
       const fk = makeFlightKey(w.flight_code, w.flight_date);
       winners[fk] = {
-        cancelled:  w.winner_seat === 'CANCELLED' || !!w.cancelled,
-        winner:     { seat: w.winner_seat, dep: w.winner_dep, arr: w.winner_arr, score: w.winner_score },
-        actualDep:  w.actual_dep,
-        actualArr:  w.actual_arr,
-        allScores:  JSON.parse(w.all_scores || '[]'),
+        cancelled:   w.winner_seat === 'CANCELLED' || !!w.cancelled,
+        winner:      { seat: w.winner_seat, dep: w.winner_dep, arr: w.winner_arr, score: w.winner_score },
+        actualDep:   w.actual_dep,
+        actualArr:   w.actual_arr,
+        allScores:   JSON.parse(w.all_scores || '[]'),
         publishedAt: w.published_at,
-        flightDate: w.flight_date
+        flightDate:  w.flight_date,
+        faFlightId:  w.fa_flight_id || ''
       };
     });
     return respond(200, H, { flights, winners });
-  }
-
-  // ── POST /admin/winner — manual publish ───────────────────────
-  if (p === '/admin/winner' && method === 'POST') {
-    const body = JSON.parse(event.body || '{}');
-    if (body.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
-    const { flight, winner, actualDep, actualArr, allScores } = body;
-    const { code, date } = parseFlightKey(flight);
-    // Also lock actuals permanently
-    await upsertActuals(code, date, actualDep, actualArr);
-    await upsertWinner(code, date, {
-      winner_seat: winner.seat, winner_dep: winner.dep,
-      winner_arr: winner.arr,  winner_score: winner.score,
-      actual_dep: actualDep,   actual_arr: actualArr,
-      all_scores: JSON.stringify(allScores),
-      published_at: new Date().toISOString(),
-      auto_awarded: false, cancelled: false
-    });
-    return respond(200, H, { ok: true });
   }
 
   // ── POST /admin/lock — lock actuals + auto-award ──────────────
@@ -492,15 +513,15 @@ exports.handler = async (event) => {
     if (body.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
     const { flight, actual_dep, actual_arr } = body;
     const { code, date } = parseFlightKey(flight);
-    // Never overwrite an existing locked value with null
-    const existing = await getActuals(code, date);
-    const newDep = actual_dep || existing?.actual_dep || null;
-    const newArr = actual_arr || existing?.actual_arr || null;
-    await upsertActuals(code, date, newDep, newArr);
-    console.log(`Admin locked ${code} ${date}: dep=${newDep} arr=${newArr}`);
+    const existing  = await getActuals(code, date, null);
+    const faId      = existing?.fa_flight_id || '';
+    const newDep    = actual_dep || existing?.actual_dep || null;
+    const newArr    = actual_arr || existing?.actual_arr || null;
+    await upsertActuals(code, date, newDep, newArr, faId);
+    console.log(`Admin locked ${code} ${date} [${faId}]: dep=${newDep} arr=${newArr}`);
     let winnerSeat = null;
     if (newDep && newArr) {
-      const w = await maybeAwardWinner(code, date, newDep, newArr);
+      const w = await maybeAwardWinner(code, date, newDep, newArr, faId);
       if (w) winnerSeat = w.seat;
     }
     return respond(200, H, { ok: true, actual_dep: newDep, actual_arr: newArr, winner: winnerSeat });
@@ -511,12 +532,34 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     if (body.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
     const { code, date } = parseFlightKey(body.flight || '');
+    const existing = await getActuals(code, date, null);
+    const faId     = existing?.fa_flight_id || '';
     await upsertWinner(code, date, {
       winner_seat: 'CANCELLED', winner_dep: null, winner_arr: null, winner_score: null,
       actual_dep: null, actual_arr: null, all_scores: '[]',
       published_at: new Date().toISOString(), auto_awarded: false, cancelled: true
-    });
+    }, faId);
     console.log(`Cancelled ${code} ${date}`);
+    return respond(200, H, { ok: true });
+  }
+
+  // ── POST /admin/winner — manual publish ───────────────────────
+  if (p === '/admin/winner' && method === 'POST') {
+    const body = JSON.parse(event.body || '{}');
+    if (body.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
+    const { flight, winner, actualDep, actualArr, allScores } = body;
+    const { code, date } = parseFlightKey(flight);
+    const existing = await getActuals(code, date, null);
+    const faId     = existing?.fa_flight_id || '';
+    await upsertActuals(code, date, actualDep, actualArr, faId);
+    await upsertWinner(code, date, {
+      winner_seat: winner.seat, winner_dep: winner.dep,
+      winner_arr:  winner.arr,  winner_score: winner.score,
+      actual_dep:  actualDep,   actual_arr: actualArr,
+      all_scores:  JSON.stringify(allScores),
+      published_at: new Date().toISOString(),
+      auto_awarded: false, cancelled: false
+    }, faId);
     return respond(200, H, { ok: true });
   }
 
@@ -528,7 +571,7 @@ exports.handler = async (event) => {
     const { code, date } = parseFlightKey(bpMatch[1]);
     const dep = decodeURIComponent(bpMatch[2]);
     const arr = decodeURIComponent(bpMatch[3]);
-    const r = await sbRequest('GET', `entries?${codeFilter(code, date)}&dep_time=eq.${encodeURIComponent(dep)}&arr_time=eq.${encodeURIComponent(arr)}&select=boarding_pass`);
+    const r   = await sbRequest('GET', `entries?${codeFilter(code, date)}&dep_time=eq.${encodeURIComponent(dep)}&arr_time=eq.${encodeURIComponent(arr)}&select=boarding_pass`);
     const entry = Array.isArray(r.data) && r.data.length ? r.data[0] : null;
     return respond(200, H, { boarding_pass: entry?.boarding_pass || null });
   }
@@ -540,7 +583,7 @@ exports.handler = async (event) => {
     if (qs.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
     const { code, date } = parseFlightKey(deleteMatch[1]);
     const [dep, arr] = decodeURIComponent(deleteMatch[2]).split('|');
-    await deleteEntry(code, date, dep, arr);
+    await deleteEntryDB(code, date, dep, arr);
     return respond(200, H, { ok: true });
   }
 
@@ -548,13 +591,14 @@ exports.handler = async (event) => {
   if (p === '/results' && method === 'GET') {
     const allWinnerRows = await getAllWinners();
     const winners = allWinnerRows.map(w => ({
-      flightCode: w.flight_code,
-      flightDate: w.flight_date,
-      cancelled:  w.winner_seat === 'CANCELLED' || !!w.cancelled,
-      winner:     { seat: w.winner_seat, score: w.winner_score },
-      actualDep:  w.actual_dep,
-      actualArr:  w.actual_arr,
-      allScores:  JSON.parse(w.all_scores || '[]'),
+      flightCode:  w.flight_code,
+      flightDate:  w.flight_date,
+      faFlightId:  w.fa_flight_id || '',
+      cancelled:   w.winner_seat === 'CANCELLED' || !!w.cancelled,
+      winner:      { seat: w.winner_seat, score: w.winner_score },
+      actualDep:   w.actual_dep,
+      actualArr:   w.actual_arr,
+      allScores:   JSON.parse(w.all_scores || '[]'),
       publishedAt: w.published_at
     }));
     return respond(200, H, { winners });
