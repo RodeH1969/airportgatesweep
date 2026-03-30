@@ -544,5 +544,21 @@ exports.handler = async (event) => {
     return respond(200, H, { ok: true });
   }
 
+  // ── GET /results — public winners feed ───────────────────────
+  if (p === '/results' && method === 'GET') {
+    const allWinnerRows = await getAllWinners();
+    const winners = allWinnerRows.map(w => ({
+      flightCode: w.flight_code,
+      flightDate: w.flight_date,
+      cancelled:  w.winner_seat === 'CANCELLED' || !!w.cancelled,
+      winner:     { seat: w.winner_seat, score: w.winner_score },
+      actualDep:  w.actual_dep,
+      actualArr:  w.actual_arr,
+      allScores:  JSON.parse(w.all_scores || '[]'),
+      publishedAt: w.published_at
+    }));
+    return respond(200, H, { winners });
+  }
+
   return respond(404, H, { error: 'Not found' });
 };
