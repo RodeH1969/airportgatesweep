@@ -159,6 +159,7 @@
       document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
     });
     if (tab === 'winners') loadWinners();
+    if (tab === 'progress' && Object.keys(allData).length) renderAll(allData);
   }
 
   // ── Auth ─────────────────────────────────────────────────────
