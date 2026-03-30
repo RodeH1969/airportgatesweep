@@ -1152,6 +1152,7 @@
       const r2 = await fetch(`/.netlify/functions/api/winner/${flightCode}`);
       if (!r2.ok) return;
       const wd = await r2.json();
+      if (wd.announced && wd.cancelled) { showCancelledScreen(flightCode); return; }
       if (wd.announced) {
         showWinnerScreen(wd, flightCode);
       } else if (onPicksPage) {
@@ -1182,6 +1183,7 @@
     try {
       const wr = await fetch('/.netlify/functions/api/winner/' + (currentFlight.key || flightCode));
       const wd = await wr.json();
+      if (wd.announced && wd.cancelled) { showCancelledScreen(flightCode); return; }
       if (wd.announced) { showWinnerScreen(wd, flightCode); return; }
 
       const pr = await fetch('/.netlify/functions/api/picks/' + (currentFlight.key || flightCode));
@@ -1259,6 +1261,36 @@
     } catch(e) { console.error('refreshLivePicks error:', e); }
   }
 
+
+  function showCancelledScreen(flightCode) {
+    stopStatusPolling();
+    const sp = document.getElementById('page-success');
+    const codeOnly = (flightCode || '').split('_')[0];
+    sp.innerHTML = `
+      <div style="max-width:420px;margin:0 auto;padding-bottom:30px;">
+        <div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:20px;text-align:center;">
+          <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.5rem;color:#ef4444;">✈️ ${codeOnly}</div>
+          <div style="font-size:0.8rem;color:#93c5fd;margin-top:4px;">Flight Status Update</div>
+        </div>
+        <div style="background:#fff;padding:32px 20px;text-align:center;">
+          <div style="font-size:3rem;margin-bottom:16px;">❌</div>
+          <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.4rem;color:#ef4444;margin-bottom:12px;">
+            Flight Cancelled
+          </div>
+          <div style="font-size:0.9rem;color:#64748b;line-height:1.6;margin-bottom:24px;">
+            Unfortunately ${codeOnly} has been cancelled.<br>
+            No winner will be awarded for this flight.<br><br>
+            Thank you for playing Airport Gate Sweep!
+          </div>
+          <button onclick="stopStatusPolling();window.location.href='/'" style="width:100%;padding:14px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
+            ✈️ Enter a Different Flight
+          </button>
+        </div>
+      </div>`;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    sp.classList.add('active');
+    window.scrollTo(0, 0);
+  }
 
   function showWinnerScreen(wd, flightCode) {
     stopStatusPolling();

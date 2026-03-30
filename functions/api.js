@@ -393,8 +393,13 @@ exports.handler = async (event) => {
     const { code, date } = parseFlightKey(winnerMatch[1]);
     const winner = await getWinner(code, date);
     if (!winner) return respond(200, headers, { announced: false });
+    // Check if flight was cancelled
+    if (winner.winner_seat === 'CANCELLED') {
+      return respond(200, headers, { announced: true, cancelled: true });
+    }
     return respond(200, headers, {
       announced: true,
+      cancelled: false,
       winner: {
         winner: { seat: winner.winner_seat, dep: winner.winner_dep, arr: winner.winner_arr, score: winner.winner_score, depDiff: null, arrDiff: null },
         actualDep: winner.actual_dep,
@@ -486,6 +491,29 @@ exports.handler = async (event) => {
     const combo = decodeURIComponent(deleteMatch[2]);
     const [dep, arr] = combo.split('|');
     await deleteEntry(code, date, dep, arr);
+    return respond(200, headers, { ok: true });
+  }
+
+  // POST /admin/cancel
+  if (p === '/admin/cancel' && method === 'POST') {
+    const body = JSON.parse(event.body || '{}');
+    if (body.key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
+    const { flight } = body;
+    const { code, date } = parseFlightKey(flight);
+    // Store cancellation as a special winner record with cancelled flag
+    await upsertWinner(code, date, {
+      winner_seat: 'CANCELLED',
+      winner_dep: null,
+      winner_arr: null,
+      winner_score: null,
+      actual_dep: null,
+      actual_arr: null,
+      all_scores: '[]',
+      published_at: new Date().toISOString(),
+      auto_awarded: false,
+      cancelled: true
+    });
+    console.log(`Flight ${code} ${date} marked as cancelled`);
     return respond(200, headers, { ok: true });
   }
 

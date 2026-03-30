@@ -302,6 +302,7 @@
           </div>
           <button class="btn green" onclick="refreshFA('${code}')">🔄 Refresh from FlightAware</button>
           <button class="btn gold" onclick="recalc('${code}')">🏆 Calculate Winner</button>
+          <button class="btn" style="background:#ef4444;" onclick="cancelFlight('${code}')">✈️ Cancel Flight</button>
         </div>
       </div>
 
@@ -473,6 +474,28 @@
             </div>`;
         }).join('');
       });
+  }
+
+
+  async function cancelFlight(code) {
+    if (!confirm(`Mark ${code.split('_')[0]} as CANCELLED?\n\nThis will close entries and show a cancellation notice to all passengers. Cannot be undone.`)) return;
+
+    try {
+      const r = await fetch(`${BASE}/admin/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: adminKey, flight: code })
+      });
+      const d = await r.json();
+      if (d.ok) {
+        showToast(`✈️ ${code.split('_')[0]} marked as cancelled`);
+        loadAllFlights();
+      } else {
+        showToast('Error: ' + (d.error || 'unknown'));
+      }
+    } catch(e) {
+      showToast('Network error');
+    }
   }
 
   function showBP(src) {
