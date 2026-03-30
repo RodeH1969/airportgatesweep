@@ -55,15 +55,35 @@ function codeFilter(code, date) {
 
 // ── DB helpers ───────────────────────────────────────────────────
 async function getEntries(code, date) {
-  const r = await sbRequest('GET', `entries?${codeFilter(code, date)}&order=created_at.asc`);
+  const r = await sbRequest('GET', `entries?${codeFilter(code, date)}&order=created_at.asc&select=id,flight_code,flight_date,seat,dep_time,arr_time,mobile,created_at`);
   return Array.isArray(r.data) ? r.data : [];
 }
 
 async function getAllEntries() {
-  const r = await sbRequest('GET', 'entries?order=created_at.asc');
+  const r = await sbRequest('GET', 'entries?order=created_at.asc&select=id,flight_code,flight_date,seat,dep_time,arr_time,mobile,created_at');
   return Array.isArray(r.data) ? r.data : [];
 }
 
+async function getBPFlags(code, date) {
+  // Fetch only seat+dep+arr+whether boarding_pass is non-null - lightweight
+  const r = await sbRequest('GET', `entries?${codeFilter(code, date)}&select=dep_time,arr_time,boarding_pass`);
+  const rows = Array.isArray(r.data) ? r.data : [];
+  const flags = {};
+  rows.forEach(e => { flags[`${e.dep_time}|${e.arr_time}`] = !!e.boarding_pass; });
+  return flags;
+}
+
+async function getAllBPFlags() {
+  const r = await sbRequest('GET', 'entries?select=flight_code,flight_date,dep_time,arr_time,boarding_pass');
+  const rows = Array.isArray(r.data) ? r.data : [];
+  const flags = {};
+  rows.forEach(e => {
+    const fk = makeFlightKey(e.flight_code, e.flight_date);
+    if (!flags[fk]) flags[fk] = {};
+    flags[fk][`${e.dep_time}|${e.arr_time}`] = !!e.boarding_pass;
+  });
+  return flags;
+}
 async function insertEntry(entry) {
   return sbRequest('POST', 'entries', entry);
 }
@@ -124,7 +144,7 @@ async function maybeAwardWinner(code, date, depTime, arrTime) {
     winner_score: winner.score,
     actual_dep:   depTime,
     actual_arr:   arrTime,
-    all_scores:   JSON.stringify(scored),
+    all_scores:   JSON.stringify(scored.map(({ boarding_pass, ...s }) => s)),
     published_at: new Date().toISOString(),
     auto_awarded: true,
     cancelled:    false
@@ -423,13 +443,13 @@ exports.handler = async (event) => {
       return respond(200, H, { flight, entries, actuals, winner });
     }
 
-    const [allEntries, allWinnerRows] = await Promise.all([getAllEntries(), getAllWinners()]);
+    const [allEntries, allWinnerRows, allBPFlags] = await Promise.all([getAllEntries(), getAllWinners(), getAllBPFlags()]);
     const flights = {};
     allEntries.forEach(e => {
       const fk = makeFlightKey(e.flight_code, e.flight_date);
       if (!flights[fk]) flights[fk] = [];
-      const { boarding_pass, ...rest } = e;
-      flights[fk].push({ ...rest, has_boarding_pass: !!boarding_pass });
+      const hasBP = !!(allBPFlags[fk] && allBPFlags[fk][`${e.dep_time}|${e.arr_time}`]);
+      flights[fk].push({ ...e, has_boarding_pass: hasBP });
     });
     const winners = {};
     allWinnerRows.forEach(w => {
@@ -508,8 +528,8 @@ exports.handler = async (event) => {
     const { code, date } = parseFlightKey(bpMatch[1]);
     const dep = decodeURIComponent(bpMatch[2]);
     const arr = decodeURIComponent(bpMatch[3]);
-    const entries = await getEntries(code, date);
-    const entry = entries.find(e => e.dep_time === dep && e.arr_time === arr);
+    const r = await sbRequest('GET', `entries?${codeFilter(code, date)}&dep_time=eq.${encodeURIComponent(dep)}&arr_time=eq.${encodeURIComponent(arr)}&select=boarding_pass`);
+    const entry = Array.isArray(r.data) && r.data.length ? r.data[0] : null;
     return respond(200, H, { boarding_pass: entry?.boarding_pass || null });
   }
 
