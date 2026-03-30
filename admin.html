@@ -16,14 +16,11 @@
     tr:hover td { background: #273548; }
     .seat { font-weight: 900; color: #e2e8f0; }
     .time { color: #60a5fa; font-weight: 700; }
-    .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-    .flight-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; color: #e2e8f0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; width: 160px; outline: none; }
     .btn { background: #2563eb; border: none; color: #fff; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 800; white-space: nowrap; }
     .btn:hover { opacity: 0.85; }
     .btn.green { background: #10b981; }
-    .btn.gold { background: #f59e0b; color: #000; }
-    .btn.red { background: #ef4444; }
-    .btn.purple { background: #a855f7; }
+    .btn.gold  { background: #f59e0b; color: #000; }
+    .btn.red   { background: #ef4444; }
     .actual-box { background: #0f2a1a; border: 1px solid #10b981; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
     .actual-box h3 { color: #10b981; font-size: 0.8rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
     .actual-fields { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
@@ -35,27 +32,61 @@
     .stat { text-align: center; }
     .stat-val { font-size: 1.3rem; font-weight: 900; color: #f59e0b; }
     .stat-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; }
-    .empty { color: #475569; font-size: 0.85rem; padding: 12px; text-align: center; }
+    .empty { color: #475569; font-size: 0.85rem; padding: 20px; text-align: center; }
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 10px 24px; border-radius: 8px; font-weight: 700; display: none; z-index: 999; font-size: 0.9rem; max-width: 90vw; text-align: center; }
     .toast.show { display: block; }
     .toast.error { background: #ef4444; }
     .auth-screen { max-width: 340px; margin: 80px auto; }
     .auth-screen input { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #e2e8f0; font-size: 1rem; margin-bottom: 12px; outline: none; }
     .fa-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-    .fa-status.scheduled  { background: #1e3a5f; color: #60a5fa; }
-    .fa-status.departed   { background: #1a2e1a; color: #4ade80; }
-    .fa-status.arrived    { background: #1a1000; color: #f59e0b; }
-    .fa-status.cancelled  { background: #3f0000; color: #f87171; }
+    .fa-status.scheduled { background: #1e3a5f; color: #60a5fa; }
+    .fa-status.departed  { background: #1a2e1a; color: #4ade80; }
+    .fa-status.arrived   { background: #1a1000; color: #f59e0b; }
+    .fa-status.cancelled { background: #3f0000; color: #f87171; }
     .flight-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
     .flight-code { font-size: 1.1rem; font-weight: 900; color: #f59e0b; }
     .flight-date-badge { font-size: 0.72rem; color: #a855f7; font-weight: 700; background: rgba(168,85,247,0.1); padding: 2px 8px; border-radius: 20px; }
     .del-btn { background: #ef4444; border: none; color: #fff; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
-    .bp-btn { background: #334155; border: none; color: #94a3b8; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
+    .bp-btn  { background: #334155; border: none; color: #94a3b8; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
     .rank-badge { display: inline-block; width: 24px; text-align: center; }
+
+    /* ── Tabs ── */
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; background: #1e293b; border-radius: 10px; padding: 5px; border: 1px solid #334155; }
+    .tab-btn { flex: 1; background: transparent; border: none; color: #64748b; font-size: 0.85rem; font-weight: 800; padding: 10px 8px; border-radius: 7px; cursor: pointer; transition: all 0.15s; }
+    .tab-btn:hover { color: #e2e8f0; background: #273548; }
+    .tab-btn.active            { background: #2563eb; color: #fff; }
+    .tab-btn.active.wtab       { background: #7c3aed; }
+    .tab-btn.active.csvtab     { background: #0f766e; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Load bar inside In Progress ── */
+    .load-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .flight-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; color: #e2e8f0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; width: 150px; outline: none; }
+
+    /* ── Winner banner inside flight card ── */
+    .winner-banner { background: linear-gradient(135deg,#2e0f6e 0%,#160a3a 100%); border: 2px solid #7c3aed; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+    .wb-trophy { font-size: 2.6rem; line-height: 1; flex-shrink: 0; }
+    .wb-label  { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #c084fc; margin-bottom: 2px; }
+    .wb-seat   { font-size: 2.2rem; font-weight: 900; color: #f0abfc; line-height: 1.1; }
+    .wb-score  { font-size: 0.8rem; color: #a78bfa; font-weight: 700; margin-top: 4px; }
+
+    /* ── Winners tab cards ── */
+    .wcard { margin-bottom: 16px; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }
+    .wcard-head { background: #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .wcard-hero { background: linear-gradient(135deg,#2e0f6e 0%,#160a3a 100%); border-top: 2px solid #7c3aed; padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
+    .wcard-scores { background: #0f172a; padding: 14px 16px; }
+
+    /* ── CSV tab ── */
+    .csv-box { text-align: center; padding: 48px 24px; }
+    .csv-box p { color: #64748b; font-size: 0.85rem; margin: 10px 0 24px; max-width: 440px; margin-left: auto; margin-right: auto; }
+    .csv-dl-btn { background: #0f766e; border: none; color: #fff; padding: 14px 40px; border-radius: 10px; font-size: 1rem; font-weight: 900; cursor: pointer; letter-spacing: 0.5px; }
+    .csv-dl-btn:hover { background: #0d9488; }
   </style>
 </head>
 <body>
 
+<!-- ── Auth screen ── -->
 <div id="auth-screen" class="auth-screen card">
   <h1>🔐 AGS Admin</h1>
   <p style="color:#64748b;font-size:0.8rem;margin-bottom:16px;">Enter admin key</p>
@@ -64,44 +95,71 @@
   <div id="auth-error" style="color:#ef4444;font-size:0.8rem;margin-top:8px;display:none;">Invalid key</div>
 </div>
 
-<div id="main" style="display:none;max-width:960px;margin:0 auto;">
+<!-- ── Main panel ── -->
+<div id="main" style="display:none;max-width:980px;margin:0 auto;">
   <h1>✈️ Airport Gate Sweep — Admin</h1>
   <div class="sub">Supabase persistent storage · Auto-scores on arrival</div>
 
-  <div class="toolbar">
-    <input class="flight-input" id="flight-filter" placeholder="e.g. QF533" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')loadFlight()">
-    <button class="btn" onclick="loadFlight()">Load Flight</button>
-    <button class="btn green" onclick="loadAll()">All Flights</button>
-    <button class="btn purple" onclick="toggleHistory()">🏆 Winners History</button>
-    <button class="btn" style="background:#6366f1" onclick="exportCSV()">Export CSV</button>
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active"       id="tab-btn-progress" onclick="switchTab('progress')">🛫 In Progress</button>
+    <button class="tab-btn wtab"         id="tab-btn-winners"  onclick="switchTab('winners')">🏆 Winners</button>
+    <button class="tab-btn csvtab"       id="tab-btn-csv"      onclick="switchTab('csv')">📥 Download CSV</button>
   </div>
 
-  <!-- Winners History Panel -->
-  <div id="history-panel" style="display:none;margin-bottom:16px;">
-    <div class="card">
-      <h3 style="color:#a855f7;font-size:0.9rem;font-weight:900;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🏆 Completed Flights & Winners</h3>
-      <div id="history-content"><div class="empty">Loading...</div></div>
+  <!-- ════ TAB: In Progress ════ -->
+  <div class="tab-panel active" id="tab-progress">
+    <div class="load-bar">
+      <input class="flight-input" id="flight-filter" placeholder="e.g. QF533"
+             oninput="this.value=this.value.toUpperCase()"
+             onkeydown="if(event.key==='Enter')loadFlight()">
+      <button class="btn" onclick="loadFlight()">🔍 Load Flight</button>
+      <button class="btn green" onclick="loadAll()">↻ Refresh All</button>
+    </div>
+
+    <div id="stats-row" style="display:none;" class="card">
+      <div class="stats-row">
+        <div class="stat"><div class="stat-val" id="stat-entries">0</div><div class="stat-label">Total Entries</div></div>
+        <div class="stat"><div class="stat-val" id="stat-flights">0</div><div class="stat-label">Active Flights</div></div>
+        <div class="stat"><div class="stat-val" id="stat-leader">—</div><div class="stat-label">Current Leader</div></div>
+      </div>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <!-- ════ TAB: Winners ════ -->
+  <div class="tab-panel" id="tab-winners">
+    <div id="winners-content"><div class="empty">Loading…</div></div>
+  </div>
+
+  <!-- ════ TAB: CSV ════ -->
+  <div class="tab-panel" id="tab-csv">
+    <div class="card csv-box">
+      <div style="font-size:3rem;">📊</div>
+      <h2 style="color:#e2e8f0;font-size:1.1rem;margin-top:10px;">Export All Entries</h2>
+      <p>Downloads a CSV of every entry across all flights — flight code, date, seat, mobile, dep pick, arr pick and timestamp.</p>
+      <button class="csv-dl-btn" onclick="exportCSV()">⬇ Download CSV</button>
     </div>
   </div>
-
-  <!-- Stats -->
-  <div id="stats-row" style="display:none;" class="card">
-    <div class="stats-row">
-      <div class="stat"><div class="stat-val" id="stat-entries">0</div><div class="stat-label">Total Entries</div></div>
-      <div class="stat"><div class="stat-val" id="stat-flights">0</div><div class="stat-label">Flights</div></div>
-      <div class="stat"><div class="stat-val" id="stat-leader">—</div><div class="stat-label">Current Leader</div></div>
-    </div>
-  </div>
-
-  <div id="results"></div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-  let adminKey = '';
-  let allData  = {};  // { flightKey: [entries] }
-  const BASE   = '/.netlify/functions/api';
+  let adminKey   = '';
+  let allData    = {};  // { flightKey: [entries] }
+  let allWinners = {};  // { flightKey: winnerObj }
+  const BASE     = '/.netlify/functions/api';
+
+  // ── Tab switching ─────────────────────────────────────────────
+  function switchTab(tab) {
+    ['progress','winners','csv'].forEach(t => {
+      document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+      document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
+    });
+    if (tab === 'winners') loadWinners();
+  }
 
   // ── Auth ─────────────────────────────────────────────────────
   function login() {
@@ -109,27 +167,30 @@
     fetch(`${BASE}/admin?key=${encodeURIComponent(k)}`)
       .then(r => { if (r.status === 403) throw new Error('forbidden'); return r.json(); })
       .then(data => {
-        adminKey = k;
+        adminKey   = k;
+        allData    = data.flights || {};
+        allWinners = data.winners || {};
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('main').style.display = 'block';
-        allData = data.flights || {};
         renderAll(allData);
       })
       .catch(() => { document.getElementById('auth-error').style.display = 'block'; });
   }
 
-  // ── Load ─────────────────────────────────────────────────────
+  // ── Load helpers ──────────────────────────────────────────────
   function loadAll() {
     fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}`)
       .then(r => r.json())
-      .then(data => { allData = data.flights || {}; renderAll(allData); });
+      .then(data => {
+        allData    = data.flights || {};
+        allWinners = data.winners || {};
+        renderAll(allData);
+      });
   }
 
   function loadFlight() {
     const raw = document.getElementById('flight-filter').value.trim().toUpperCase();
     if (!raw) { loadAll(); return; }
-
-    // First resolve to a dated key via FlightAware
     fetch(`${BASE}/flight/${encodeURIComponent(raw)}`)
       .then(r => r.json())
       .then(fd => {
@@ -146,24 +207,21 @@
       .catch(() => showToast('Could not load flight', true));
   }
 
-  // ── Render ────────────────────────────────────────────────────
+  // ── Render In-Progress tab ────────────────────────────────────
   function renderAll(flights) {
     const keys = Object.keys(flights);
     document.getElementById('stats-row').style.display = keys.length ? 'block' : 'none';
     const totalEntries = keys.reduce((n, k) => n + (flights[k]?.length || 0), 0);
     document.getElementById('stat-entries').textContent = totalEntries;
     document.getElementById('stat-flights').textContent = keys.length;
-    document.getElementById('stat-leader').textContent = '—';
-
+    document.getElementById('stat-leader').textContent  = '—';
     if (!keys.length) {
-      document.getElementById('results').innerHTML = '<div class="empty">No flights yet</div>';
+      document.getElementById('results').innerHTML = '<div class="empty">No active flights yet</div>';
       return;
     }
-
-    document.getElementById('results').innerHTML = keys.map(key => {
-      const entries = flights[key] || [];
-      return buildFlightCard(key, entries, null, null, null);
-    }).join('');
+    document.getElementById('results').innerHTML = keys.map(key =>
+      buildFlightCard(key, flights[key] || [], null, null, null)
+    ).join('');
   }
 
   function renderOne(key, entries, actuals, state, faData) {
@@ -171,27 +229,40 @@
     document.getElementById('results').innerHTML = buildFlightCard(key, entries, actuals, state, faData);
   }
 
+  // ── Build flight card ─────────────────────────────────────────
   function buildFlightCard(key, entries, actuals, state, faData) {
-    const parts = key.split('_');
-    const code = parts[0];
-    const date = parts[1] || '';
-    const lockedDep = actuals?.actual_dep || '';
-    const lockedArr = actuals?.actual_arr || '';
+    const parts      = key.split('_');
+    const code       = parts[0];
+    const date       = parts[1] || '';
+    const lockedDep  = actuals?.actual_dep || '';
+    const lockedArr  = actuals?.actual_arr || '';
     const stateClass = state || 'scheduled';
     const stateLabel = state || '—';
 
-    const scored = scoreEntries(entries, lockedDep, lockedArr);
-    const hasScores = scored.some(e => e.score !== null);
+    const scored     = scoreEntries(entries, lockedDep, lockedArr);
+    const hasScores  = scored.some(e => e.score !== null);
+    const topEntry   = hasScores ? scored[0] : null;
+
+    // Winner banner — only shown once both actuals are locked
+    const winnerBanner = (topEntry && lockedDep && lockedArr) ? `
+      <div class="winner-banner">
+        <div class="wb-trophy">🏆</div>
+        <div>
+          <div class="wb-label">Winner</div>
+          <div class="wb-seat">Seat ${topEntry.seat}</div>
+          <div class="wb-score">${topEntry.score}m total &nbsp;·&nbsp; dep ${topEntry.depDiff}m off &nbsp;·&nbsp; arr ${topEntry.arrDiff}m off</div>
+        </div>
+      </div>` : '';
 
     const rows = scored.map((e, i) => `
-      <tr>
+      <tr style="${i===0&&hasScores?'background:rgba(124,58,237,0.08);':''}">
         <td><span class="rank-badge">${i===0&&hasScores?'🏆':i===1&&hasScores?'🥈':i===2&&hasScores?'🥉':i+1}</span></td>
-        <td class="seat">${e.seat||'—'}</td>
+        <td class="seat" style="${i===0&&hasScores?'color:#f0abfc;font-size:1rem;':''}">${e.seat||'—'}</td>
         <td style="color:#10b981;font-size:0.75rem;font-weight:700;">${e.mobile||'—'}</td>
         <td class="time">${e.dep_time||'—'}</td>
         <td class="time">${e.arr_time||'—'}</td>
         <td style="color:#64748b;font-size:0.72rem;">${e.created_at ? new Date(e.created_at).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
-        ${hasScores ? `<td style="font-weight:900;color:${i===0?'#f59e0b':'#94a3b8'};">${e.score !== null ? e.score+'m' : '—'}</td>` : ''}
+        ${hasScores ? `<td style="font-weight:900;color:${i===0?'#f59e0b':'#94a3b8'};">${e.score!==null?e.score+'m':'—'}</td>` : ''}
         <td>${e.has_boarding_pass ? `<button class="bp-btn" onclick="fetchAndShowBP('${key}','${e.dep_time}','${e.arr_time}')">📋 View</button>` : '—'}</td>
         <td><button class="del-btn" onclick="deleteEntry('${key}','${encodeURIComponent(e.dep_time+'|'+e.arr_time)}')">✕</button></td>
       </tr>`).join('');
@@ -207,6 +278,8 @@
           <div style="color:#64748b;font-size:0.75rem;">${entries.length} ${entries.length===1?'entry':'entries'}</div>
         </div>
 
+        ${winnerBanner}
+
         <div class="actual-box">
           <h3>📡 Actual Times</h3>
           <div class="actual-fields">
@@ -219,11 +292,13 @@
               <input class="actual-input ${lockedArr?'locked':''}" id="actual-arr-${key}" placeholder="--:--" value="${lockedArr}" oninput="onActualInput('${key}')">
             </div>
             <button class="btn green" onclick="refreshFA('${key}')">🔄 Refresh FlightAware</button>
-            <button class="btn gold" onclick="manualLock('${key}')">🔒 Lock & Award</button>
-            <button class="btn red" onclick="cancelFlight('${key}')">❌ Cancel Flight</button>
+            <button class="btn gold"  onclick="manualLock('${key}')">🔒 Lock & Award</button>
+            <button class="btn red"   onclick="cancelFlight('${key}')">❌ Cancel Flight</button>
           </div>
           <div id="lock-status-${key}" style="margin-top:8px;font-size:0.75rem;color:${lockedDep?'#10b981':'#64748b'};">
-            ${lockedDep ? `✅ Dep locked: ${lockedDep}${lockedArr ? ` · Arr locked: ${lockedArr}` : ' · Arr pending'}` : 'Not locked — hit Refresh FlightAware or enter times manually then Lock & Award'}
+            ${lockedDep
+              ? `✅ Dep: ${lockedDep}${lockedArr ? ` · Arr: ${lockedArr} — locked permanently` : ' · Arr still pending'}`
+              : 'Not locked — Refresh FlightAware or enter times manually then hit Lock & Award'}
           </div>
         </div>
 
@@ -233,7 +308,7 @@
             ${hasScores ? '<th>Score</th>' : ''}
             <th>BP</th><th>Delete</th>
           </tr></thead>
-          <tbody>${rows || '<tr><td colspan="9" class="empty">No entries</td></tr>'}</tbody>
+          <tbody>${rows || `<tr><td colspan="9" class="empty">No entries yet</td></tr>`}</tbody>
         </table>
       </div>`;
   }
@@ -251,55 +326,39 @@
     const adm = timeToMins(actualDep);
     const aam = timeToMins(actualArr);
     return (entries || []).map(e => {
-      const dm = timeToMins(e.dep_time);
-      const am = timeToMins(e.arr_time);
-      const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : null;
-      const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : null;
-      const score   = (depDiff !== null && arrDiff !== null) ? depDiff + arrDiff : null;
+      const dm      = timeToMins(e.dep_time);
+      const am      = timeToMins(e.arr_time);
+      const depDiff = (adm!==null && dm!==null) ? Math.abs(dm-adm) : null;
+      const arrDiff = (aam!==null && am!==null) ? Math.abs(am-aam) : null;
+      const score   = (depDiff!==null && arrDiff!==null) ? depDiff+arrDiff : null;
       return { ...e, depDiff, arrDiff, score };
-    }).sort((a, b) => (a.score ?? 9999) - (b.score ?? 9999));
+    }).sort((a,b) => (a.score??9999)-(b.score??9999));
   }
 
   // ── Manual input handler ──────────────────────────────────────
   function onActualInput(key) {
     const dep = document.getElementById(`actual-dep-${key}`)?.value || '';
-    const arr = document.getElementById(`actual-arr-${key}`)?.value || '';
-    // Re-render scores in table without saving yet
-    const entries = allData[key] || [];
-    const scored = scoreEntries(entries, dep, arr);
-    // Just update lock status hint
-    const ls = document.getElementById(`lock-status-${key}`);
-    if (ls) ls.textContent = dep ? `Ready to lock — hit 🔒 Lock & Award when correct` : 'Enter times then hit Lock & Award';
+    const ls  = document.getElementById(`lock-status-${key}`);
+    if (ls) ls.textContent = dep ? 'Ready to lock — hit 🔒 Lock & Award when correct' : 'Enter times then hit Lock & Award';
   }
 
-  // ── Refresh from FlightAware — locks immediately ───────────────
+  // ── Refresh from FlightAware ──────────────────────────────────
   async function refreshFA(key) {
     const stEl = document.getElementById(`fa-status-${key}`);
-    if (stEl) { stEl.textContent = 'checking...'; stEl.className = 'fa-status scheduled'; }
-
+    if (stEl) { stEl.textContent = 'checking…'; stEl.className = 'fa-status scheduled'; }
     let fd;
     try {
       const r = await fetch(`${BASE}/flight/${encodeURIComponent(key)}`);
       fd = await r.json();
     } catch(e) { showToast('Could not reach FlightAware', true); return; }
-
-    if (stEl) { stEl.textContent = fd.state || 'unknown'; stEl.className = `fa-status ${fd.state||'scheduled'}`; }
-
+    if (stEl) { stEl.textContent = fd.state||'unknown'; stEl.className = `fa-status ${fd.state||'scheduled'}`; }
     const hasDep = fd.actual_dep && fd.actual_dep !== '--:--';
     const hasArr = fd.actual_arr && fd.actual_arr !== '--:--';
-
-    if (!hasDep) {
-      showToast(`Status: ${fd.state} — no actuals from FlightAware yet`);
-      return;
-    }
-
-    // Set fields
+    if (!hasDep) { showToast(`Status: ${fd.state} — no actuals from FlightAware yet`); return; }
     const depEl = document.getElementById(`actual-dep-${key}`);
     const arrEl = document.getElementById(`actual-arr-${key}`);
     if (depEl) { depEl.value = fd.actual_dep; depEl.classList.add('locked'); }
     if (hasArr && arrEl) { arrEl.value = fd.actual_arr; arrEl.classList.add('locked'); }
-
-    // Lock to Supabase immediately
     await lockActuals(key, fd.actual_dep, hasArr ? fd.actual_arr : null);
   }
 
@@ -311,11 +370,10 @@
     await lockActuals(key, dep, arr || null);
   }
 
-  // ── Core lock function — saves to Supabase, auto-awards winner ─
+  // ── Core lock — saves to Supabase & auto-awards winner ────────
   async function lockActuals(key, dep, arr) {
     const ls = document.getElementById(`lock-status-${key}`);
-    if (ls) ls.textContent = 'Saving to database...';
-
+    if (ls) ls.textContent = 'Saving to database…';
     try {
       const r = await fetch(`${BASE}/admin/lock`, {
         method: 'POST',
@@ -323,7 +381,6 @@
         body: JSON.stringify({ key: adminKey, flight: key, actual_dep: dep, actual_arr: arr })
       });
       const d = await r.json();
-
       if (!d.ok) { showToast('Lock failed: ' + (d.error||'unknown'), true); return; }
 
       const depEl = document.getElementById(`actual-dep-${key}`);
@@ -332,17 +389,26 @@
       if (arrEl && arr) { arrEl.value = arr; arrEl.classList.add('locked'); }
 
       if (d.winner) {
-        if (ls) ls.style.color = '#f59e0b';
-        if (ls) ls.textContent = `✅ Locked — 🏆 Winner auto-awarded: Seat ${d.winner}`;
+        // Rebuild the card so winner banner appears immediately
+        const cardEl = document.getElementById(`flight-card-${key}`);
+        if (cardEl) {
+          fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}&flight=${encodeURIComponent(key)}`)
+            .then(r2 => r2.json())
+            .then(data2 => {
+              const fresh = data2.entries || [];
+              const div   = document.createElement('div');
+              div.innerHTML = buildFlightCard(key, fresh, { actual_dep: dep, actual_arr: arr }, null, null);
+              cardEl.replaceWith(div.firstElementChild);
+            });
+        }
+        if (ls) { ls.style.color = '#f59e0b'; ls.textContent = `✅ Locked — 🏆 Winner auto-awarded: Seat ${d.winner}`; }
         showToast(`🏆 Winner: Seat ${d.winner} — players can see results now`);
       } else if (arr) {
-        if (ls) ls.style.color = '#10b981';
-        if (ls) ls.textContent = `✅ Dep: ${dep} · Arr: ${arr} — locked permanently`;
+        if (ls) { ls.style.color = '#10b981'; ls.textContent = `✅ Dep: ${dep} · Arr: ${arr} — locked permanently`; }
         showToast(`Locked: dep ${dep} · arr ${arr}`);
       } else {
-        if (ls) ls.style.color = '#10b981';
-        if (ls) ls.textContent = `✅ Dep locked: ${dep} · Waiting for arrival time`;
-        showToast(`Dep locked: ${dep} — refresh again after landing for arrival`);
+        if (ls) { ls.style.color = '#10b981'; ls.textContent = `✅ Dep locked: ${dep} · Waiting for arrival time`; }
+        showToast(`Dep locked: ${dep} — refresh again after landing`);
       }
     } catch(e) { showToast('Network error saving actuals', true); }
   }
@@ -363,88 +429,100 @@
     } catch(e) { showToast('Network error', true); }
   }
 
-  // ── Winners History ───────────────────────────────────────────
-  function toggleHistory() {
-    const panel = document.getElementById('history-panel');
-    const showing = panel.style.display !== 'none';
-    panel.style.display = showing ? 'none' : 'block';
-    if (!showing) loadHistory();
-  }
-
-  function loadHistory() {
-    const content = document.getElementById('history-content');
-    content.innerHTML = '<div class="empty">Loading...</div>';
+  // ── Winners tab ───────────────────────────────────────────────
+  function loadWinners() {
+    const content = document.getElementById('winners-content');
+    content.innerHTML = '<div class="empty">Loading…</div>';
     fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}`)
       .then(r => r.json())
       .then(data => {
         const winners = data.winners || {};
         const flights = data.flights || {};
-        const completed = Object.entries(winners).filter(([, w]) => !w.cancelled);
+
+        // Only show CONFIRMED winners (not cancelled, must have winner.seat)
+        const finalised = Object.entries(winners).filter(([, w]) => !w.cancelled && w.winner?.seat);
         const cancelled = Object.entries(winners).filter(([, w]) => w.cancelled);
 
-        if (!completed.length && !cancelled.length) {
-          content.innerHTML = '<div class="empty">No completed flights yet</div>';
+        if (!finalised.length && !cancelled.length) {
+          content.innerHTML = '<div class="empty">No finalised results yet — lock & award a flight to see winners here</div>';
           return;
         }
 
-        const renderWinner = ([key, w]) => {
-          const code = key.split('_')[0];
-          const date = w.flightDate || key.split('_')[1] || '';
-          const allScores = w.allScores || [];
-          const winner = w.winner || {};
-          const entryCount = (flights[key] || []).length;
+        const renderWCard = ([key, w]) => {
+          const code       = key.split('_')[0];
+          const date       = w.flightDate || key.split('_')[1] || '';
+          const allScores  = w.allScores || [];
+          const winnerObj  = w.winner    || {};
+          const entryCount = allScores.length || (flights[key]||[]).length;
+          const published  = w.publishedAt ? new Date(w.publishedAt).toLocaleString('en-AU') : '—';
 
           if (w.cancelled) {
-            return `<div style="margin-bottom:12px;border:1px solid #3f0000;border-radius:10px;overflow:hidden;">
-              <div style="background:#1e293b;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-                <div><span style="font-weight:900;color:#f87171;">✈️ ${code}</span> ${date?`<span class="flight-date-badge">${date}</span>`:''}</div>
-                <span style="font-size:0.72rem;color:#f87171;font-weight:700;">❌ CANCELLED</span>
+            return `<div class="wcard" style="border-color:#3f0000;">
+              <div class="wcard-head">
+                <div>
+                  <span style="font-weight:900;color:#f87171;font-size:1rem;">✈️ ${code}</span>
+                  ${date?`<span class="flight-date-badge" style="margin-left:8px;">${date}</span>`:''}
+                </div>
+                <span style="font-size:0.72rem;color:#f87171;font-weight:800;letter-spacing:1px;">❌ CANCELLED</span>
               </div>
             </div>`;
           }
 
-          const rows = allScores.map((s, i) => `
-            <tr style="${i===0?'background:rgba(168,85,247,0.1);':''}">
-              <td style="padding:5px 10px;">${i===0?'🏆':i===1?'🥈':i===2?'🥉':i+1}</td>
-              <td style="padding:5px 10px;font-weight:900;color:${i===0?'#a855f7':'#e2e8f0'};">${s.seat}</td>
-              <td style="padding:5px 10px;color:#60a5fa;">${s.dep||s.dep_time||'—'}</td>
-              <td style="padding:5px 10px;color:#60a5fa;">${s.arr||s.arr_time||'—'}</td>
-              <td style="padding:5px 10px;font-weight:${i===0?'900':'400'};color:${i===0?'#a855f7':'#94a3b8'};">${s.score!=null?s.score+'m':'—'}</td>
+          const scoreRows = allScores.map((s,i) => `
+            <tr style="${i===0?'background:rgba(124,58,237,0.08);':''}">
+              <td style="padding:6px 10px;">${i===0?'🏆':i===1?'🥈':i===2?'🥉':i+1}</td>
+              <td style="padding:6px 10px;font-weight:900;color:${i===0?'#f0abfc':'#e2e8f0'};font-size:${i===0?'0.95rem':'0.8rem'};">${s.seat}</td>
+              <td style="padding:6px 10px;color:#60a5fa;">${s.dep||s.dep_time||'—'}</td>
+              <td style="padding:6px 10px;color:#60a5fa;">${s.arr||s.arr_time||'—'}</td>
+              <td style="padding:6px 10px;font-weight:${i===0?900:400};color:${i===0?'#f59e0b':'#94a3b8'};">${s.score!=null?s.score+'m':'—'}</td>
             </tr>`).join('');
 
-          return `<div style="margin-bottom:16px;border:1px solid #334155;border-radius:10px;overflow:hidden;">
-            <div style="background:#1e293b;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-              <div>
+          return `<div class="wcard">
+            <div class="wcard-head">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                 <span style="font-weight:900;font-size:1rem;color:#f59e0b;">✈️ ${code}</span>
-                ${date?`<span class="flight-date-badge" style="margin-left:8px;">${date}</span>`:''}
-                <span style="margin-left:8px;font-size:0.72rem;color:#64748b;">${entryCount} entries</span>
+                ${date?`<span class="flight-date-badge">${date}</span>`:''}
+                <span style="font-size:0.72rem;color:#64748b;">${entryCount} entries</span>
               </div>
-              <div style="font-size:0.72rem;color:#64748b;">
-                Actual: ${w.actualDep||'—'} → ${w.actualArr||'—'} &nbsp;·&nbsp;
-                ${w.publishedAt ? new Date(w.publishedAt).toLocaleString('en-AU') : '—'}
+              <div style="font-size:0.72rem;color:#64748b;text-align:right;">
+                Actual: ${w.actualDep||'—'} → ${w.actualArr||'—'}<br>
+                <span style="color:#475569;">${published}</span>
               </div>
             </div>
-            <div style="padding:12px 16px;background:#0f172a;">
-              <div style="font-size:0.85rem;color:#a855f7;font-weight:900;margin-bottom:10px;">
-                🏆 WINNER: Seat ${winner.seat} — ${winner.score}m off
+
+            <div class="wcard-hero">
+              <div style="font-size:2.8rem;line-height:1;flex-shrink:0;">🏆</div>
+              <div>
+                <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#c084fc;margin-bottom:3px;">Winner</div>
+                <div style="font-size:2.2rem;font-weight:900;color:#f0abfc;line-height:1.1;">Seat ${winnerObj.seat}</div>
+                <div style="font-size:0.82rem;color:#a78bfa;font-weight:700;margin-top:5px;">${winnerObj.score}m total off actual times</div>
               </div>
-              <table style="width:100%;border-collapse:collapse;font-size:0.78rem;color:#e2e8f0;">
-                <thead><tr style="color:#64748b;font-size:0.65rem;text-transform:uppercase;">
+            </div>
+
+            <div class="wcard-scores">
+              <div style="font-size:0.65rem;color:#475569;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">Full Scoreboard</div>
+              <table style="width:100%;border-collapse:collapse;color:#e2e8f0;">
+                <thead><tr style="color:#475569;font-size:0.65rem;text-transform:uppercase;">
                   <th style="padding:4px 10px;text-align:left;">#</th>
                   <th style="padding:4px 10px;text-align:left;">Seat</th>
-                  <th style="padding:4px 10px;text-align:left;">Dep</th>
-                  <th style="padding:4px 10px;text-align:left;">Arr</th>
+                  <th style="padding:4px 10px;text-align:left;">Dep Pick</th>
+                  <th style="padding:4px 10px;text-align:left;">Arr Pick</th>
                   <th style="padding:4px 10px;text-align:left;">Score</th>
                 </tr></thead>
-                <tbody>${rows}</tbody>
+                <tbody>${scoreRows}</tbody>
               </table>
             </div>
           </div>`;
         };
 
-        content.innerHTML = completed.map(renderWinner).join('') +
-          (cancelled.length ? `<div style="margin-top:16px;font-size:0.75rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Cancelled Flights</div>` + cancelled.map(renderWinner).join('') : '');
-      });
+        let html = finalised.map(renderWCard).join('');
+        if (cancelled.length) {
+          html += `<div style="margin-top:24px;margin-bottom:10px;font-size:0.7rem;color:#475569;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Cancelled Flights</div>`;
+          html += cancelled.map(renderWCard).join('');
+        }
+        content.innerHTML = html;
+      })
+      .catch(() => { content.innerHTML = '<div class="empty">Could not load winners</div>'; });
   }
 
   // ── Delete entry ──────────────────────────────────────────────
@@ -453,10 +531,10 @@
     const combo = decodeURIComponent(encodedCombo);
     fetch(`${BASE}/admin/picks/${key}/${encodeURIComponent(combo)}?key=${encodeURIComponent(adminKey)}`, { method: 'DELETE' })
       .then(r => r.json())
-      .then(d => { if (d.ok) { showToast('Deleted'); loadFlight(); } else showToast('Error', true); });
+      .then(d => { if (d.ok) { showToast('Deleted'); loadAll(); } else showToast('Error', true); });
   }
 
-  // ── Boarding pass ─────────────────────────────────────────────
+  // ── Boarding pass modal ───────────────────────────────────────
   async function fetchAndShowBP(key, dep, arr) {
     try {
       const r = await fetch(`${BASE}/admin/bp/${key}/${encodeURIComponent(dep)}/${encodeURIComponent(arr)}?key=${encodeURIComponent(adminKey)}`);
@@ -476,9 +554,9 @@
     const rows = [['Flight','Date','Seat','Mobile','Dep Pick','Arr Pick','Timestamp']];
     for (const [key, entries] of Object.entries(allData)) {
       const parts = key.split('_');
-      const code = parts[0];
-      const date = parts[1] || '';
-      for (const e of (entries || [])) {
+      const code  = parts[0];
+      const date  = parts[1] || '';
+      for (const e of (entries||[])) {
         rows.push([code, date, e.seat||'', e.mobile||'', e.dep_time||'', e.arr_time||'', e.created_at||'']);
       }
     }
