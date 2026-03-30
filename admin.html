@@ -10,64 +10,55 @@
     h1 { font-size: 1.4rem; font-weight: 900; color: #f59e0b; margin-bottom: 4px; }
     .sub { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
     .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-    .flight-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-    .flight-code { font-size: 1.1rem; font-weight: 900; color: #f59e0b; }
-    .flight-count { font-size: 0.75rem; color: #64748b; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     th { text-align: left; padding: 6px 10px; color: #64748b; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #334155; }
     td { padding: 8px 10px; border-bottom: 1px solid #1e293b; vertical-align: middle; }
     tr:hover td { background: #273548; }
     .seat { font-weight: 900; color: #e2e8f0; }
     .time { color: #60a5fa; font-weight: 700; }
-    .score { font-weight: 900; }
-    .score.winner { color: #f59e0b; font-size: 1rem; }
-    .del-btn { background: #ef4444; border: none; color: #fff; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
-    .del-btn:hover { background: #dc2626; }
     .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-    .flight-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; color: #e2e8f0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; width: 140px; outline: none; }
+    .flight-input { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; color: #e2e8f0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; width: 160px; outline: none; }
     .btn { background: #2563eb; border: none; color: #fff; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 800; white-space: nowrap; }
-    .btn:hover { background: #1d4ed8; }
+    .btn:hover { opacity: 0.85; }
     .btn.green { background: #10b981; }
-    .btn.green:hover { background: #059669; }
     .btn.gold { background: #f59e0b; color: #000; }
-    .btn.gold:hover { background: #d97706; }
     .btn.red { background: #ef4444; }
-    .btn.red:hover { background: #dc2626; }
+    .btn.purple { background: #a855f7; }
     .actual-box { background: #0f2a1a; border: 1px solid #10b981; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
-    .actual-box h3 { color: #10b981; font-size: 0.85rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .actual-box h3 { color: #10b981; font-size: 0.8rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
     .actual-fields { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
     .field { display: flex; flex-direction: column; gap: 4px; }
-    .field label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
-    .actual-input { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px 12px; color: #e2e8f0; font-size: 0.95rem; font-weight: 800; width: 100px; outline: none; }
-    .winner-box { background: linear-gradient(135deg, #1a1000, #2d1f00); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin-bottom: 16px; text-align: center; display: none; }
-    .winner-box.show { display: block; }
-    .winner-trophy { font-size: 3rem; margin-bottom: 8px; }
-    .winner-name { font-size: 2rem; font-weight: 900; color: #f59e0b; }
-    .winner-score { font-size: 0.9rem; color: #94a3b8; margin-top: 4px; }
-    .winner-times { font-size: 0.8rem; color: #64748b; margin-top: 8px; }
-    .publish-row { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
-    .stats-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
+    .field label { font-size: 0.62rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .actual-input { background: #1e293b; border: 2px solid #334155; border-radius: 6px; padding: 8px 12px; color: #f59e0b; font-size: 1rem; font-weight: 900; width: 100px; outline: none; }
+    .actual-input.locked { border-color: #10b981; color: #10b981; }
+    .stats-row { display: flex; gap: 24px; flex-wrap: wrap; }
     .stat { text-align: center; }
     .stat-val { font-size: 1.3rem; font-weight: 900; color: #f59e0b; }
     .stat-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; }
     .empty { color: #475569; font-size: 0.85rem; padding: 12px; text-align: center; }
-    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 10px 24px; border-radius: 8px; font-weight: 700; display: none; z-index: 999; font-size: 0.9rem; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 10px 24px; border-radius: 8px; font-weight: 700; display: none; z-index: 999; font-size: 0.9rem; max-width: 90vw; text-align: center; }
     .toast.show { display: block; }
+    .toast.error { background: #ef4444; }
     .auth-screen { max-width: 340px; margin: 80px auto; }
     .auth-screen input { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #e2e8f0; font-size: 1rem; margin-bottom: 12px; outline: none; }
-    .rank-badge { display: inline-block; width: 24px; text-align: center; }
     .fa-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-    .fa-status.scheduled { background: #1e3a5f; color: #60a5fa; }
-    .fa-status.departed  { background: #1a2e1a; color: #4ade80; }
-    .fa-status.arrived   { background: #1a1000; color: #f59e0b; }
-    .loading { color: #64748b; font-style: italic; font-size: 0.8rem; }
+    .fa-status.scheduled  { background: #1e3a5f; color: #60a5fa; }
+    .fa-status.departed   { background: #1a2e1a; color: #4ade80; }
+    .fa-status.arrived    { background: #1a1000; color: #f59e0b; }
+    .fa-status.cancelled  { background: #3f0000; color: #f87171; }
+    .flight-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .flight-code { font-size: 1.1rem; font-weight: 900; color: #f59e0b; }
+    .flight-date-badge { font-size: 0.72rem; color: #a855f7; font-weight: 700; background: rgba(168,85,247,0.1); padding: 2px 8px; border-radius: 20px; }
+    .del-btn { background: #ef4444; border: none; color: #fff; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
+    .bp-btn { background: #334155; border: none; color: #94a3b8; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
+    .rank-badge { display: inline-block; width: 24px; text-align: center; }
   </style>
 </head>
 <body>
 
 <div id="auth-screen" class="auth-screen card">
   <h1>🔐 AGS Admin</h1>
-  <p style="color:#64748b;font-size:0.8rem;margin-bottom:16px;">Enter admin key to continue</p>
+  <p style="color:#64748b;font-size:0.8rem;margin-bottom:16px;">Enter admin key</p>
   <input type="password" id="key-input" placeholder="Admin key" onkeydown="if(event.key==='Enter')login()">
   <button class="btn" style="width:100%" onclick="login()">Login</button>
   <div id="auth-error" style="color:#ef4444;font-size:0.8rem;margin-top:8px;display:none;">Invalid key</div>
@@ -75,16 +66,17 @@
 
 <div id="main" style="display:none;max-width:960px;margin:0 auto;">
   <h1>✈️ Airport Gate Sweep — Admin</h1>
-  <div class="sub">Persistent storage via GitHub · Auto-scores on arrival</div>
+  <div class="sub">Supabase persistent storage · Auto-scores on arrival</div>
 
   <div class="toolbar">
-    <input class="flight-input" id="flight-filter" placeholder="e.g. QF533" oninput="this.value=this.value.toUpperCase()">
+    <input class="flight-input" id="flight-filter" placeholder="e.g. QF533" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')loadFlight()">
     <button class="btn" onclick="loadFlight()">Load Flight</button>
     <button class="btn green" onclick="loadAll()">All Flights</button>
-    <button class="btn" style="background:#a855f7" onclick="showHistory()">🏆 Winners History</button>
+    <button class="btn purple" onclick="toggleHistory()">🏆 Winners History</button>
     <button class="btn" style="background:#6366f1" onclick="exportCSV()">Export CSV</button>
   </div>
 
+  <!-- Winners History Panel -->
   <div id="history-panel" style="display:none;margin-bottom:16px;">
     <div class="card">
       <h3 style="color:#a855f7;font-size:0.9rem;font-weight:900;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🏆 Completed Flights & Winners</h3>
@@ -92,6 +84,7 @@
     </div>
   </div>
 
+  <!-- Stats -->
   <div id="stats-row" style="display:none;" class="card">
     <div class="stats-row">
       <div class="stat"><div class="stat-val" id="stat-entries">0</div><div class="stat-label">Total Entries</div></div>
@@ -106,27 +99,26 @@
 <div id="toast" class="toast"></div>
 
 <script>
-  let adminKey  = '';
-  let allData   = {};
-  let faCache   = {}; // cache FA data per flight
-  let actualCache = {}; // locked actual times from server
-  const BASE    = '/.netlify/functions/api';
+  let adminKey = '';
+  let allData  = {};  // { flightKey: [entries] }
+  const BASE   = '/.netlify/functions/api';
 
+  // ── Auth ─────────────────────────────────────────────────────
   function login() {
     const k = document.getElementById('key-input').value.trim();
-    adminKey = k;
     fetch(`${BASE}/admin?key=${encodeURIComponent(k)}`)
-      .then(r => { if (r.status === 403) { document.getElementById('auth-error').style.display='block'; return null; } return r.json(); })
+      .then(r => { if (r.status === 403) throw new Error('forbidden'); return r.json(); })
       .then(data => {
-        if (!data) return;
+        adminKey = k;
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('main').style.display = 'block';
-        // Supabase returns flights as { code: [array of entries] }
         allData = data.flights || {};
         renderAll(allData);
-      });
+      })
+      .catch(() => { document.getElementById('auth-error').style.display = 'block'; });
   }
 
+  // ── Load ─────────────────────────────────────────────────────
   function loadAll() {
     fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}`)
       .then(r => r.json())
@@ -134,273 +126,360 @@
   }
 
   function loadFlight() {
-    const code = document.getElementById('flight-filter').value.trim().toUpperCase();
-    if (!code) { loadAll(); return; }
+    const raw = document.getElementById('flight-filter').value.trim().toUpperCase();
+    if (!raw) { loadAll(); return; }
 
-    fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}&flight=${code}`)
+    // First resolve to a dated key via FlightAware
+    fetch(`${BASE}/flight/${encodeURIComponent(raw)}`)
       .then(r => r.json())
-      .then(data => {
-        // Supabase: entries is array, actuals is object
-        const entries = data.entries || [];
-        const actuals = data.actuals || null;
-        allData = { [code]: entries };
-
-        if (actuals?.actual_dep || actuals?.actual_arr) {
-          if (!faCache[code]) faCache[code] = {};
-          if (actuals.actual_dep) { faCache[code].actual_dep = actuals.actual_dep; faCache[code].state = 'departed'; }
-          if (actuals.actual_arr) { faCache[code].actual_arr = actuals.actual_arr; faCache[code].state = 'arrived'; }
-        }
-        const cachedDep = faCache[code]?.actual_dep || null;
-        const cachedArr = faCache[code]?.actual_arr || null;
-        renderAll(allData, cachedDep, cachedArr, code);
-
-        // If no entries, still show the flight card with FA status
-        if (!Object.keys(entries).length) {
-          allData = { [code]: {} };
-          renderAll(allData, cachedDep, cachedArr, code);
-          document.getElementById('results').innerHTML =
-            `<div class="card" id="flight-card-${code}">
-              <div class="flight-header">
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <div class="flight-code">✈️ ${code}</div>
-                  <span id="fa-status-${code}" class="fa-status scheduled">—</span>
-                </div>
-                <div class="flight-count">0 entries</div>
-              </div>
-              <div class="actual-box">
-                <h3>📡 Actual Times — Auto-pulled from FlightAware</h3>
-                <div class="actual-fields">
-                  <div class="field"><label>Actual Gate Dep</label>
-                    <input class="actual-input" id="actual-dep-${code}" placeholder="--:--" value="${cachedDep||''}" oninput="recalc('${code}')">
-                  </div>
-                  <div class="field"><label>Actual Gate Arr</label>
-                    <input class="actual-input" id="actual-arr-${code}" placeholder="--:--" value="${cachedArr||''}" oninput="recalc('${code}')">
-                  </div>
-                  <button class="btn green" onclick="refreshFA('${code}')">🔄 Refresh from FlightAware</button>
-                </div>
-              </div>
-              <div class="empty">No entries yet for ${code}</div>
-            </div>`;
-        }
-      });
+      .then(fd => {
+        const key = fd.flight_key || raw;
+        return fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}&flight=${encodeURIComponent(key)}`)
+          .then(r => r.json())
+          .then(data => {
+            const entries = data.entries || [];
+            const actuals = data.actuals || null;
+            allData = { [key]: entries };
+            renderOne(key, entries, actuals, fd.state, fd);
+          });
+      })
+      .catch(() => showToast('Could not load flight', true));
   }
 
+  // ── Render ────────────────────────────────────────────────────
+  function renderAll(flights) {
+    const keys = Object.keys(flights);
+    document.getElementById('stats-row').style.display = keys.length ? 'block' : 'none';
+    const totalEntries = keys.reduce((n, k) => n + (flights[k]?.length || 0), 0);
+    document.getElementById('stat-entries').textContent = totalEntries;
+    document.getElementById('stat-flights').textContent = keys.length;
+    document.getElementById('stat-leader').textContent = '—';
+
+    if (!keys.length) {
+      document.getElementById('results').innerHTML = '<div class="empty">No flights yet</div>';
+      return;
+    }
+
+    document.getElementById('results').innerHTML = keys.map(key => {
+      const entries = flights[key] || [];
+      return buildFlightCard(key, entries, null, null, null);
+    }).join('');
+  }
+
+  function renderOne(key, entries, actuals, state, faData) {
+    document.getElementById('stats-row').style.display = 'none';
+    document.getElementById('results').innerHTML = buildFlightCard(key, entries, actuals, state, faData);
+  }
+
+  function buildFlightCard(key, entries, actuals, state, faData) {
+    const parts = key.split('_');
+    const code = parts[0];
+    const date = parts[1] || '';
+    const lockedDep = actuals?.actual_dep || '';
+    const lockedArr = actuals?.actual_arr || '';
+    const stateClass = state || 'scheduled';
+    const stateLabel = state || '—';
+
+    const scored = scoreEntries(entries, lockedDep, lockedArr);
+    const hasScores = scored.some(e => e.score !== null);
+
+    const rows = scored.map((e, i) => `
+      <tr>
+        <td><span class="rank-badge">${i===0&&hasScores?'🏆':i===1&&hasScores?'🥈':i===2&&hasScores?'🥉':i+1}</span></td>
+        <td class="seat">${e.seat||'—'}</td>
+        <td style="color:#10b981;font-size:0.75rem;font-weight:700;">${e.mobile||'—'}</td>
+        <td class="time">${e.dep_time||'—'}</td>
+        <td class="time">${e.arr_time||'—'}</td>
+        <td style="color:#64748b;font-size:0.72rem;">${e.created_at ? new Date(e.created_at).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+        ${hasScores ? `<td style="font-weight:900;color:${i===0?'#f59e0b':'#94a3b8'};">${e.score !== null ? e.score+'m' : '—'}</td>` : ''}
+        <td>${e.has_boarding_pass ? `<button class="bp-btn" onclick="fetchAndShowBP('${key}','${e.dep_time}','${e.arr_time}')">📋 View</button>` : '—'}</td>
+        <td><button class="del-btn" onclick="deleteEntry('${key}','${encodeURIComponent(e.dep_time+'|'+e.arr_time)}')">✕</button></td>
+      </tr>`).join('');
+
+    return `
+      <div class="card" id="flight-card-${key}">
+        <div class="flight-header">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="flight-code">✈️ ${code}</div>
+            ${date ? `<span class="flight-date-badge">${date}</span>` : ''}
+            <span id="fa-status-${key}" class="fa-status ${stateClass}">${stateLabel}</span>
+          </div>
+          <div style="color:#64748b;font-size:0.75rem;">${entries.length} ${entries.length===1?'entry':'entries'}</div>
+        </div>
+
+        <div class="actual-box">
+          <h3>📡 Actual Times</h3>
+          <div class="actual-fields">
+            <div class="field">
+              <label>Actual Gate Dep</label>
+              <input class="actual-input ${lockedDep?'locked':''}" id="actual-dep-${key}" placeholder="--:--" value="${lockedDep}" oninput="onActualInput('${key}')">
+            </div>
+            <div class="field">
+              <label>Actual Gate Arr</label>
+              <input class="actual-input ${lockedArr?'locked':''}" id="actual-arr-${key}" placeholder="--:--" value="${lockedArr}" oninput="onActualInput('${key}')">
+            </div>
+            <button class="btn green" onclick="refreshFA('${key}')">🔄 Refresh FlightAware</button>
+            <button class="btn gold" onclick="manualLock('${key}')">🔒 Lock & Award</button>
+            <button class="btn red" onclick="cancelFlight('${key}')">❌ Cancel Flight</button>
+          </div>
+          <div id="lock-status-${key}" style="margin-top:8px;font-size:0.75rem;color:${lockedDep?'#10b981':'#64748b'};">
+            ${lockedDep ? `✅ Dep locked: ${lockedDep}${lockedArr ? ` · Arr locked: ${lockedArr}` : ' · Arr pending'}` : 'Not locked — hit Refresh FlightAware or enter times manually then Lock & Award'}
+          </div>
+        </div>
+
+        <table>
+          <thead><tr>
+            <th>#</th><th>Seat</th><th>Mobile</th><th>Dep Pick</th><th>Arr Pick</th><th>Time</th>
+            ${hasScores ? '<th>Score</th>' : ''}
+            <th>BP</th><th>Delete</th>
+          </tr></thead>
+          <tbody>${rows || '<tr><td colspan="9" class="empty">No entries</td></tr>'}</tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── Scoring ───────────────────────────────────────────────────
   function timeToMins(t) {
     if (!t) return null;
     const clean = t.replace(/^[<>]\s*/, '');
-    const parts = clean.split(':').map(Number);
-    if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
-    return parts[0] * 60 + parts[1];
+    const [h, m] = clean.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return null;
+    return h * 60 + m;
   }
 
-  function recalc(code) {
-    const depEl = document.getElementById(`actual-dep-${code}`);
-    const arrEl = document.getElementById(`actual-arr-${code}`);
-    // Read from field first, fall back to FA cache
-    const actualDep = (depEl && depEl.value) || (faCache[code]?.actual_dep) || '';
-    const actualArr = (arrEl && arrEl.value) || (faCache[code]?.actual_arr) || '';
-    renderFlight(code, allData[code] || {}, actualDep, actualArr);
-  }
-
-  function renderAll(flights, actualDep, actualArr, focusCode) {
-    const results = document.getElementById('results');
-    results.innerHTML = '';
-    let totalEntries = 0, flightCount = 0, globalBest = null;
-
-    for (const [code, entries] of Object.entries(flights)) {
-      const list = Array.isArray(entries) ? entries : Object.entries(entries || {});
-      if (!list.length) continue;
-      flightCount++;
-      totalEntries += list.length;
-      const scored = scoreEntries(list, actualDep, actualArr);
-      if (scored.length && scored[0].total !== null) {
-        if (!globalBest || scored[0].total < (globalBest.total ?? 9999)) {
-          globalBest = { ...scored[0], flight: code };
-        }
-      }
-      const cachedDep = faCache[code]?.actual_dep || null;
-      const cachedArr = faCache[code]?.actual_arr || null;
-      renderFlight(code, entries,
-        (focusCode === code ? actualDep : null) || cachedDep,
-        (focusCode === code ? actualArr : null) || cachedArr
-      );
-    }
-
-    if (totalEntries > 0) {
-      document.getElementById('stats-row').style.display = 'block';
-      document.getElementById('stat-entries').textContent = totalEntries;
-      document.getElementById('stat-flights').textContent = flightCount;
-      document.getElementById('stat-leader').textContent  = globalBest ? `${globalBest.seat}` : '—';
-    }
-    if (totalEntries === 0) results.innerHTML = '<div class="empty">No entries found</div>';
-  }
-
-  function scoreEntries(list, actualDep, actualArr) {
+  function scoreEntries(entries, actualDep, actualArr) {
     const adm = timeToMins(actualDep);
     const aam = timeToMins(actualArr);
-    // Handle both array (Supabase) and object (legacy) formats
-    const entries = Array.isArray(list) ? list : Object.entries(list).map(([combo, entry]) => {
-      const e = typeof entry === 'object' ? entry : { seat: entry };
-      return { dep_time: combo.split('|')[0], arr_time: combo.split('|')[1], ...e };
-    });
-    return entries.map(e => {
+    return (entries || []).map(e => {
       const dm = timeToMins(e.dep_time);
       const am = timeToMins(e.arr_time);
       const depDiff = (adm !== null && dm !== null) ? Math.abs(dm - adm) : null;
       const arrDiff = (aam !== null && am !== null) ? Math.abs(am - aam) : null;
-      const total   = (depDiff !== null && arrDiff !== null) ? depDiff + arrDiff : null;
-      return { combo: e.dep_time + '|' + e.arr_time, ...e, depDiff, arrDiff, total };
-    }).sort((a, b) => (a.total ?? 9999) - (b.total ?? 9999));
+      const score   = (depDiff !== null && arrDiff !== null) ? depDiff + arrDiff : null;
+      return { ...e, depDiff, arrDiff, score };
+    }).sort((a, b) => (a.score ?? 9999) - (b.score ?? 9999));
   }
 
-  function renderFlight(code, entries, actualDep, actualArr) {
-    const existing = document.getElementById(`flight-card-${code}`);
-    // Handle both Supabase array and legacy object formats
-    const list = Array.isArray(entries) ? entries : Object.entries(entries || {}).map(([combo, e]) => {
-      const obj = typeof e === 'object' ? e : { seat: e };
-      return { dep_time: combo.split('|')[0], arr_time: combo.split('|')[1], ...obj };
-    });
-    const scored = scoreEntries(list, actualDep, actualArr);
-    const hasScores = scored.some(s => s.total !== null);
-    const winner = (hasScores && scored.length > 0) ? scored[0] : null;
+  // ── Manual input handler ──────────────────────────────────────
+  function onActualInput(key) {
+    const dep = document.getElementById(`actual-dep-${key}`)?.value || '';
+    const arr = document.getElementById(`actual-arr-${key}`)?.value || '';
+    // Re-render scores in table without saving yet
+    const entries = allData[key] || [];
+    const scored = scoreEntries(entries, dep, arr);
+    // Just update lock status hint
+    const ls = document.getElementById(`lock-status-${key}`);
+    if (ls) ls.textContent = dep ? `Ready to lock — hit 🔒 Lock & Award when correct` : 'Enter times then hit Lock & Award';
+  }
 
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.id = `flight-card-${code}`;
+  // ── Refresh from FlightAware — locks immediately ───────────────
+  async function refreshFA(key) {
+    const stEl = document.getElementById(`fa-status-${key}`);
+    if (stEl) { stEl.textContent = 'checking...'; stEl.className = 'fa-status scheduled'; }
 
-    card.innerHTML = `
-      <div class="flight-header">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="flight-code">✈️ ${code}</div>
-          <span id="fa-status-${code}" class="fa-status scheduled">—</span>
-        </div>
-        <div class="flight-count">${list.length} entr${list.length===1?'y':'ies'}</div>
-      </div>
+    let fd;
+    try {
+      const r = await fetch(`${BASE}/flight/${encodeURIComponent(key)}`);
+      fd = await r.json();
+    } catch(e) { showToast('Could not reach FlightAware', true); return; }
 
-      <!-- Winner box -->
-      <div id="winner-box-${code}" class="winner-box ${winner ? 'show' : ''}">
-        <div class="winner-trophy">🏆</div>
-        <div class="winner-name">Seat ${winner?.seat || '—'}</div>
-        <div class="winner-score">${winner?.total !== null && winner?.total !== undefined ? `Score: ${winner.depDiff}m + ${winner.arrDiff}m = ${winner.total} mins off` : ''}</div>
-        <div class="winner-times">Actual dep: ${actualDep || '—'} · Actual arr: ${actualArr || '—'}</div>
-        <div class="publish-row">
-          <button class="btn gold" onclick="publishWinner('${code}')">📢 Publish Winner to Players</button>
-        </div>
-      </div>
+    if (stEl) { stEl.textContent = fd.state || 'unknown'; stEl.className = `fa-status ${fd.state||'scheduled'}`; }
 
-      <!-- Actual times -->
-      <div class="actual-box">
-        <h3>📡 Actual Times — Auto-pulled from FlightAware</h3>
-        <div class="actual-fields">
-          <div class="field">
-            <label>Actual Gate Dep</label>
-            <input class="actual-input" id="actual-dep-${code}" placeholder="--:--" value="${actualDep || (faCache[code]?.actual_dep || '')}" oninput="recalc('${code}')">
-          </div>
-          <div class="field">
-            <label>Actual Gate Arr</label>
-            <input class="actual-input" id="actual-arr-${code}" placeholder="--:--" value="${actualArr || (faCache[code]?.actual_arr || '')}" oninput="recalc('${code}')">
-          </div>
-          <button class="btn green" onclick="refreshFA('${code}')">🔄 Refresh from FlightAware</button>
-          <button class="btn gold" onclick="recalc('${code}')">🏆 Calculate Winner</button>
-          <button class="btn" style="background:#ef4444;" onclick="cancelFlight('${code}')">✈️ Cancel Flight</button>
-        </div>
-      </div>
+    const hasDep = fd.actual_dep && fd.actual_dep !== '--:--';
+    const hasArr = fd.actual_arr && fd.actual_arr !== '--:--';
 
-      <!-- Leaderboard -->
-      <table>
-        <thead><tr>
-          <th>#</th><th>Seat</th><th>Mobile</th><th>Dep Pick</th><th>Arr Pick</th><th>Time</th>
-          ${hasScores ? '<th>Score</th>' : ''}
-          <th>BP</th><th>Delete</th>
-        </tr></thead>
-        <tbody id="tbody-${code}">
-        ${scored.map((e, i) => `
-          <tr>
-            <td><span class="rank-badge">${i===0&&hasScores?'🏆':i===1&&hasScores?'🥈':i===2&&hasScores?'🥉':i+1}</span></td>
-            <td class="seat">${e.seat||'—'}</td>
-            <td style="color:#10b981;font-size:0.75rem;font-weight:700;">${e.mobile||'—'}</td>
-            <td class="time">${e.dep_time||e.dep||'—'}</td>
-            <td class="time">${e.arr_time||e.arr||'—'}</td>
-            <td style="color:#475569;font-size:0.72rem;">${(e.created_at||e.timestamp) ? new Date(e.created_at||e.timestamp).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
-            ${hasScores ? `<td class="score ${i===0?'winner':''}">${e.total!==null?`${e.depDiff}m + ${e.arrDiff}m = <strong>${e.total}m</strong>`:'—'}</td>` : ''}
-            <td>${(e.has_boarding_pass||e.boarding_pass||e.boardingPass) ? `<button onclick="fetchAndShowBP('${code}','${e.dep_time||e.dep}','${e.arr_time||e.arr}')" style="background:#334155;border:none;color:#60a5fa;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:700;">📋 View</button>` : '—'}</td>
-            <td><button class="del-btn" onclick="deleteEntry('${code}','${encodeURIComponent(e.combo)}')">✕</button></td>
-          </tr>`).join('')}
-        </tbody>
-      </table>`;
-
-    if (existing) existing.replaceWith(card);
-    else document.getElementById('results').appendChild(card);
-
-    // Restore status badge from cache only — NO automatic FA calls
-    const stEl = document.getElementById(`fa-status-${code}`);
-    if (stEl) {
-      stEl.textContent = faCache[code]?.state || '—';
-      stEl.className = `fa-status ${faCache[code]?.state || 'scheduled'}`;
+    if (!hasDep) {
+      showToast(`Status: ${fd.state} — no actuals from FlightAware yet`);
+      return;
     }
+
+    // Set fields
+    const depEl = document.getElementById(`actual-dep-${key}`);
+    const arrEl = document.getElementById(`actual-arr-${key}`);
+    if (depEl) { depEl.value = fd.actual_dep; depEl.classList.add('locked'); }
+    if (hasArr && arrEl) { arrEl.value = fd.actual_arr; arrEl.classList.add('locked'); }
+
+    // Lock to Supabase immediately
+    await lockActuals(key, fd.actual_dep, hasArr ? fd.actual_arr : null);
   }
 
-  function refreshFA(code) {
-    const stEl = document.getElementById(`fa-status-${code}`);
-    if (stEl) { stEl.textContent = 'loading...'; stEl.className = 'fa-status scheduled'; }
-    fetch(`${BASE}/flight/${code}`)
+  // ── Manual lock & award ───────────────────────────────────────
+  async function manualLock(key) {
+    const dep = document.getElementById(`actual-dep-${key}`)?.value?.trim();
+    const arr = document.getElementById(`actual-arr-${key}`)?.value?.trim();
+    if (!dep) { showToast('Enter departure time first', true); return; }
+    await lockActuals(key, dep, arr || null);
+  }
+
+  // ── Core lock function — saves to Supabase, auto-awards winner ─
+  async function lockActuals(key, dep, arr) {
+    const ls = document.getElementById(`lock-status-${key}`);
+    if (ls) ls.textContent = 'Saving to database...';
+
+    try {
+      const r = await fetch(`${BASE}/admin/lock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: adminKey, flight: key, actual_dep: dep, actual_arr: arr })
+      });
+      const d = await r.json();
+
+      if (!d.ok) { showToast('Lock failed: ' + (d.error||'unknown'), true); return; }
+
+      const depEl = document.getElementById(`actual-dep-${key}`);
+      const arrEl = document.getElementById(`actual-arr-${key}`);
+      if (depEl && dep) { depEl.value = dep; depEl.classList.add('locked'); }
+      if (arrEl && arr) { arrEl.value = arr; arrEl.classList.add('locked'); }
+
+      if (d.winner) {
+        if (ls) ls.style.color = '#f59e0b';
+        if (ls) ls.textContent = `✅ Locked — 🏆 Winner auto-awarded: Seat ${d.winner}`;
+        showToast(`🏆 Winner: Seat ${d.winner} — players can see results now`);
+      } else if (arr) {
+        if (ls) ls.style.color = '#10b981';
+        if (ls) ls.textContent = `✅ Dep: ${dep} · Arr: ${arr} — locked permanently`;
+        showToast(`Locked: dep ${dep} · arr ${arr}`);
+      } else {
+        if (ls) ls.style.color = '#10b981';
+        if (ls) ls.textContent = `✅ Dep locked: ${dep} · Waiting for arrival time`;
+        showToast(`Dep locked: ${dep} — refresh again after landing for arrival`);
+      }
+    } catch(e) { showToast('Network error saving actuals', true); }
+  }
+
+  // ── Cancel flight ─────────────────────────────────────────────
+  async function cancelFlight(key) {
+    const code = key.split('_')[0];
+    if (!confirm(`Mark ${code} as CANCELLED?\n\nPassengers will see a cancellation notice. No winner will be awarded.`)) return;
+    try {
+      const r = await fetch(`${BASE}/admin/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: adminKey, flight: key })
+      });
+      const d = await r.json();
+      if (d.ok) showToast(`${code} marked as cancelled`);
+      else showToast('Error: ' + d.error, true);
+    } catch(e) { showToast('Network error', true); }
+  }
+
+  // ── Winners History ───────────────────────────────────────────
+  function toggleHistory() {
+    const panel = document.getElementById('history-panel');
+    const showing = panel.style.display !== 'none';
+    panel.style.display = showing ? 'none' : 'block';
+    if (!showing) loadHistory();
+  }
+
+  function loadHistory() {
+    const content = document.getElementById('history-content');
+    content.innerHTML = '<div class="empty">Loading...</div>';
+    fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}`)
       .then(r => r.json())
-      .then(fd => {
-        if (stEl) { stEl.textContent = fd.state || 'unknown'; stEl.className = `fa-status ${fd.state||'scheduled'}`; }
-        const depEl = document.getElementById(`actual-dep-${code}`);
-        const arrEl = document.getElementById(`actual-arr-${code}`);
-        if (fd.state === 'departed' || fd.state === 'arrived') {
-          if (depEl && fd.actual_dep) depEl.value = fd.actual_dep;
-          if (arrEl && fd.actual_arr) arrEl.value = fd.actual_arr;
-          recalc(code);
-        } else {
-          if (depEl) depEl.value = '';
-          if (arrEl) arrEl.value = '';
+      .then(data => {
+        const winners = data.winners || {};
+        const flights = data.flights || {};
+        const completed = Object.entries(winners).filter(([, w]) => !w.cancelled);
+        const cancelled = Object.entries(winners).filter(([, w]) => w.cancelled);
+
+        if (!completed.length && !cancelled.length) {
+          content.innerHTML = '<div class="empty">No completed flights yet</div>';
+          return;
         }
-        showToast(`FlightAware updated — status: ${fd.state}`);
-      }).catch(() => showToast('Could not reach FlightAware'));
+
+        const renderWinner = ([key, w]) => {
+          const code = key.split('_')[0];
+          const date = w.flightDate || key.split('_')[1] || '';
+          const allScores = w.allScores || [];
+          const winner = w.winner || {};
+          const entryCount = (flights[key] || []).length;
+
+          if (w.cancelled) {
+            return `<div style="margin-bottom:12px;border:1px solid #3f0000;border-radius:10px;overflow:hidden;">
+              <div style="background:#1e293b;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+                <div><span style="font-weight:900;color:#f87171;">✈️ ${code}</span> ${date?`<span class="flight-date-badge">${date}</span>`:''}</div>
+                <span style="font-size:0.72rem;color:#f87171;font-weight:700;">❌ CANCELLED</span>
+              </div>
+            </div>`;
+          }
+
+          const rows = allScores.map((s, i) => `
+            <tr style="${i===0?'background:rgba(168,85,247,0.1);':''}">
+              <td style="padding:5px 10px;">${i===0?'🏆':i===1?'🥈':i===2?'🥉':i+1}</td>
+              <td style="padding:5px 10px;font-weight:900;color:${i===0?'#a855f7':'#e2e8f0'};">${s.seat}</td>
+              <td style="padding:5px 10px;color:#60a5fa;">${s.dep||s.dep_time||'—'}</td>
+              <td style="padding:5px 10px;color:#60a5fa;">${s.arr||s.arr_time||'—'}</td>
+              <td style="padding:5px 10px;font-weight:${i===0?'900':'400'};color:${i===0?'#a855f7':'#94a3b8'};">${s.score!=null?s.score+'m':'—'}</td>
+            </tr>`).join('');
+
+          return `<div style="margin-bottom:16px;border:1px solid #334155;border-radius:10px;overflow:hidden;">
+            <div style="background:#1e293b;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+              <div>
+                <span style="font-weight:900;font-size:1rem;color:#f59e0b;">✈️ ${code}</span>
+                ${date?`<span class="flight-date-badge" style="margin-left:8px;">${date}</span>`:''}
+                <span style="margin-left:8px;font-size:0.72rem;color:#64748b;">${entryCount} entries</span>
+              </div>
+              <div style="font-size:0.72rem;color:#64748b;">
+                Actual: ${w.actualDep||'—'} → ${w.actualArr||'—'} &nbsp;·&nbsp;
+                ${w.publishedAt ? new Date(w.publishedAt).toLocaleString('en-AU') : '—'}
+              </div>
+            </div>
+            <div style="padding:12px 16px;background:#0f172a;">
+              <div style="font-size:0.85rem;color:#a855f7;font-weight:900;margin-bottom:10px;">
+                🏆 WINNER: Seat ${winner.seat} — ${winner.score}m off
+              </div>
+              <table style="width:100%;border-collapse:collapse;font-size:0.78rem;color:#e2e8f0;">
+                <thead><tr style="color:#64748b;font-size:0.65rem;text-transform:uppercase;">
+                  <th style="padding:4px 10px;text-align:left;">#</th>
+                  <th style="padding:4px 10px;text-align:left;">Seat</th>
+                  <th style="padding:4px 10px;text-align:left;">Dep</th>
+                  <th style="padding:4px 10px;text-align:left;">Arr</th>
+                  <th style="padding:4px 10px;text-align:left;">Score</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+        };
+
+        content.innerHTML = completed.map(renderWinner).join('') +
+          (cancelled.length ? `<div style="margin-top:16px;font-size:0.75rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Cancelled Flights</div>` + cancelled.map(renderWinner).join('') : '');
+      });
   }
 
-  async function publishWinner(code) {
-    const depEl = document.getElementById(`actual-dep-${code}`);
-    const arrEl = document.getElementById(`actual-arr-${code}`);
-    const actualDep = depEl?.value || '';
-    const actualArr = arrEl?.value || '';
-    const entries = Object.entries(allData[code] || {});
-    const scored  = scoreEntries(entries, actualDep, actualArr);
-    if (!scored.length || scored[0].total === null) { showToast('Calculate scores first'); return; }
-    const winner = scored[0];
-
-    const r = await fetch(`${BASE}/admin/winner`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        key: adminKey,
-        flight: code,
-        winner: { seat: winner.seat, dep: winner.dep, arr: winner.arr, score: winner.total, depDiff: winner.depDiff, arrDiff: winner.arrDiff },
-        actualDep, actualArr,
-        allScores: scored.map(s => ({ seat: s.seat, dep: s.dep, arr: s.arr, score: s.total, depDiff: s.depDiff, arrDiff: s.arrDiff }))
-      })
-    });
-    const d = await r.json();
-    if (d.ok) showToast(`🏆 Winner published! Players will see results.`);
-    else showToast('Error: ' + d.error);
-  }
-
-  function deleteEntry(code, encodedCombo) {
+  // ── Delete entry ──────────────────────────────────────────────
+  function deleteEntry(key, encodedCombo) {
     if (!confirm('Delete this entry?')) return;
     const combo = decodeURIComponent(encodedCombo);
-    fetch(`${BASE}/admin/picks/${code}/${encodeURIComponent(combo)}?key=${encodeURIComponent(adminKey)}`, { method: 'DELETE' })
+    fetch(`${BASE}/admin/picks/${key}/${encodeURIComponent(combo)}?key=${encodeURIComponent(adminKey)}`, { method: 'DELETE' })
       .then(r => r.json())
-      .then(d => { if (d.ok) { showToast('Deleted'); loadFlight(); } else showToast('Error: ' + d.error); });
+      .then(d => { if (d.ok) { showToast('Deleted'); loadFlight(); } else showToast('Error', true); });
   }
 
+  // ── Boarding pass ─────────────────────────────────────────────
+  async function fetchAndShowBP(key, dep, arr) {
+    try {
+      const r = await fetch(`${BASE}/admin/bp/${key}/${encodeURIComponent(dep)}/${encodeURIComponent(arr)}?key=${encodeURIComponent(adminKey)}`);
+      const d = await r.json();
+      if (d.boarding_pass) {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+        modal.innerHTML = `<img src="${d.boarding_pass}" style="max-width:95vw;max-height:95vh;border-radius:8px;">`;
+        modal.onclick = () => modal.remove();
+        document.body.appendChild(modal);
+      } else showToast('No boarding pass for this entry');
+    } catch(e) { showToast('Could not load boarding pass', true); }
+  }
+
+  // ── Export CSV ────────────────────────────────────────────────
   function exportCSV() {
-    const rows = [['Flight','Seat','Dep Pick','Arr Pick','Timestamp']];
-    for (const [code, entries] of Object.entries(allData)) {
-      for (const [combo, entry] of Object.entries(entries)) {
-        const e = typeof entry === 'object' ? entry : { seat: entry, dep: combo.split('|')[0], arr: combo.split('|')[1], timestamp: '' };
-        rows.push([code, e.seat, e.dep, e.arr, e.timestamp||'']);
+    const rows = [['Flight','Date','Seat','Mobile','Dep Pick','Arr Pick','Timestamp']];
+    for (const [key, entries] of Object.entries(allData)) {
+      const parts = key.split('_');
+      const code = parts[0];
+      const date = parts[1] || '';
+      for (const e of (entries || [])) {
+        rows.push([code, date, e.seat||'', e.mobile||'', e.dep_time||'', e.arr_time||'', e.created_at||'']);
       }
     }
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
@@ -411,115 +490,12 @@
     showToast('CSV downloaded');
   }
 
-  function showHistory() {
-    const panel = document.getElementById('history-panel');
-    const content = document.getElementById('history-content');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    if (panel.style.display === 'none') return;
-
-    fetch(`${BASE}/admin?key=${encodeURIComponent(adminKey)}`)
-      .then(r => r.json())
-      .then(data => {
-        const winners = data.winners || {};
-        const flights = data.flights || {};
-
-        if (!Object.keys(winners).length) {
-          content.innerHTML = '<div class="empty">No completed flights yet</div>';
-          return;
-        }
-
-        content.innerHTML = Object.entries(winners).map(([code, w]) => {
-          const allScores = w.allScores || [];
-          const winner = w.winner || {};
-          const entries = flights[code] || {};
-          const entryCount = Object.keys(entries).length;
-
-          const rows = allScores.map((s, i) => `
-            <tr style="${i===0?'background:rgba(168,85,247,0.1);':''}">
-              <td style="padding:5px 10px;">${i===0?'🏆':i===1?'🥈':i===2?'🥉':i+1}</td>
-              <td style="padding:5px 10px;font-weight:900;color:${i===0?'#a855f7':'#e2e8f0'};">${s.seat}</td>
-              <td style="padding:5px 10px;color:#60a5fa;">${s.dep || s.dep_time || '—'}</td>
-              <td style="padding:5px 10px;color:#60a5fa;">${s.arr || s.arr_time || '—'}</td>
-              <td style="padding:5px 10px;font-weight:${i===0?'900':'400'};color:${i===0?'#a855f7':'#94a3b8'};">${s.score !== null ? s.score+'m' : '—'}</td>
-            </tr>`).join('');
-
-          return `
-            <div style="margin-bottom:20px;border:1px solid #334155;border-radius:10px;overflow:hidden;">
-              <div style="background:#1e293b;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                <div>
-                  <span style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#f59e0b;">✈️ ${code.split('_')[0]}</span>
-                  ${w.flightDate ? `<span style="margin-left:8px;font-size:0.75rem;color:#a855f7;font-weight:700;">${w.flightDate}</span>` : ''}
-                  <span style="margin-left:10px;font-size:0.75rem;color:#64748b;">${entryCount} entries</span>
-                </div>
-                <div style="font-size:0.75rem;color:#64748b;">
-                  Actual: ${w.actualDep||'—'} → ${w.actualArr||'—'} &nbsp;·&nbsp;
-                  Published: ${w.publishedAt ? new Date(w.publishedAt).toLocaleString('en-AU') : '—'}
-                </div>
-              </div>
-              <div style="padding:12px 16px;background:#0f172a;">
-                <div style="font-size:0.8rem;color:#a855f7;font-weight:900;margin-bottom:8px;">
-                  🏆 WINNER: Seat ${winner.seat} — ${winner.score}m off
-                </div>
-                <table style="width:100%;border-collapse:collapse;font-size:0.78rem;color:#e2e8f0;">
-                  <thead><tr style="color:#64748b;font-size:0.65rem;text-transform:uppercase;">
-                    <th style="padding:4px 10px;text-align:left;">#</th>
-                    <th style="padding:4px 10px;text-align:left;">Seat</th>
-                    <th style="padding:4px 10px;text-align:left;">Dep</th>
-                    <th style="padding:4px 10px;text-align:left;">Arr</th>
-                    <th style="padding:4px 10px;text-align:left;">Score</th>
-                  </tr></thead>
-                  <tbody>${rows}</tbody>
-                </table>
-              </div>
-            </div>`;
-        }).join('');
-      });
-  }
-
-
-  async function cancelFlight(code) {
-    if (!confirm(`Mark ${code.split('_')[0]} as CANCELLED?\n\nThis will close entries and show a cancellation notice to all passengers. Cannot be undone.`)) return;
-
-    try {
-      const r = await fetch(`${BASE}/admin/cancel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: adminKey, flight: code })
-      });
-      const d = await r.json();
-      if (d.ok) {
-        showToast(`✈️ ${code.split('_')[0]} marked as cancelled`);
-        loadAllFlights();
-      } else {
-        showToast('Error: ' + (d.error || 'unknown'));
-      }
-    } catch(e) {
-      showToast('Network error');
-    }
-  }
-
-  function showBP(src) {
-    const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-    modal.innerHTML = `<img src="${src}" style="max-width:95vw;max-height:95vh;border-radius:8px;">`;
-    modal.onclick = () => modal.remove();
-    document.body.appendChild(modal);
-  }
-
-  async function fetchAndShowBP(code, dep, arr) {
-    try {
-      const r = await fetch(`${BASE}/admin/bp/${code}/${encodeURIComponent(dep)}/${encodeURIComponent(arr)}?key=${encodeURIComponent(adminKey)}`);
-      const d = await r.json();
-      if (d.boarding_pass) showBP(d.boarding_pass);
-      else showToast('No boarding pass for this entry');
-    } catch(e) { showToast('Could not load boarding pass'); }
-  }
-
-  function showToast(msg) {
+  // ── Toast ─────────────────────────────────────────────────────
+  function showToast(msg, isError) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => t.classList.remove('show'), 4000);
   }
 </script>
 </body>

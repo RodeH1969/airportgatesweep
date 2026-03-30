@@ -1,11 +1,11 @@
 const https = require('https');
 
-const FA_KEY     = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
-const ADMIN_KEY  = 'AGS2026admin';
-const SB_URL     = 'udcriobsizpalijmwoxr.supabase.co';
-const SB_KEY     = 'sb_secret_1Ih1D7T0GuHt-MkMNhjXkQ_KfxKGuPG';
+const FA_KEY    = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
+const ADMIN_KEY = 'AGS2026admin';
+const SB_URL    = 'udcriobsizpalijmwoxr.supabase.co';
+const SB_KEY    = 'sb_secret_1Ih1D7T0GuHt-MkMNhjXkQ_KfxKGuPG';
 
-// ── Supabase REST helpers ────────────────────────────────────────
+// ── Supabase ─────────────────────────────────────────────────────
 function sbRequest(method, path, body) {
   return new Promise((resolve) => {
     const payload = body ? JSON.stringify(body) : null;
@@ -25,18 +25,17 @@ function sbRequest(method, path, body) {
       let b = '';
       res.on('data', c => b += c);
       res.on('end', () => {
-        console.log('SB', method, path, res.statusCode);
         try { resolve({ statusCode: res.statusCode, data: JSON.parse(b) }); }
         catch(e) { resolve({ statusCode: res.statusCode, data: [] }); }
       });
     });
-    req.on('error', (e) => { console.error('SB error:', e.message); resolve({ statusCode: 500, data: [] }); });
+    req.on('error', (e) => resolve({ statusCode: 500, data: [] }));
     if (payload) req.write(payload);
     req.end();
   });
 }
 
-// Parse "QF559" or "QF559_2026-03-30" → { code, date }
+// ── Flight key helpers ───────────────────────────────────────────
 function parseFlightKey(raw) {
   const str = (raw || '').toUpperCase();
   const m = str.match(/^([A-Z0-9]+)_(\d{4}-\d{2}-\d{2})$/);
@@ -44,18 +43,17 @@ function parseFlightKey(raw) {
   return { code: str, date: '' };
 }
 
-// Build a "QF559_2026-03-30" key
 function makeFlightKey(code, date) {
   return date ? `${code}_${date}` : code;
 }
 
-// ── DB helpers (all use code + date) ────────────────────────────
 function codeFilter(code, date) {
   let f = `flight_code=eq.${encodeURIComponent(code)}`;
   if (date) f += `&flight_date=eq.${encodeURIComponent(date)}`;
   return f;
 }
 
+// ── DB helpers ───────────────────────────────────────────────────
 async function getEntries(code, date) {
   const r = await sbRequest('GET', `entries?${codeFilter(code, date)}&order=created_at.asc`);
   return Array.isArray(r.data) ? r.data : [];
@@ -86,7 +84,6 @@ async function getActuals(code, date) {
 }
 
 async function upsertActuals(code, date, actualDep, actualArr) {
-  // Delete then insert for upsert behaviour
   await sbRequest('DELETE', `actuals?${codeFilter(code, date)}`, null);
   return sbRequest('POST', 'actuals', {
     flight_code: code,
@@ -112,6 +109,30 @@ async function upsertWinner(code, date, winnerData) {
   return sbRequest('POST', 'winners', { flight_code: code, flight_date: date || '', ...winnerData });
 }
 
+// Auto-award winner when both actuals are available
+async function maybeAwardWinner(code, date, depTime, arrTime) {
+  const alreadyWon = await getWinner(code, date);
+  if (alreadyWon) return alreadyWon; // already awarded
+  const entries = await getEntries(code, date);
+  if (!entries.length) return null;
+  const scored = scoreEntries(entries, depTime, arrTime);
+  const winner = scored[0];
+  await upsertWinner(code, date, {
+    winner_seat:  winner.seat,
+    winner_dep:   winner.dep_time,
+    winner_arr:   winner.arr_time,
+    winner_score: winner.score,
+    actual_dep:   depTime,
+    actual_arr:   arrTime,
+    all_scores:   JSON.stringify(scored),
+    published_at: new Date().toISOString(),
+    auto_awarded: true,
+    cancelled:    false
+  });
+  console.log(`Winner awarded ${code} ${date}: Seat ${winner.seat} score ${winner.score}`);
+  return winner;
+}
+
 // ── FlightAware ──────────────────────────────────────────────────
 function fetchFA(faPath) {
   return new Promise((resolve) => {
@@ -124,7 +145,7 @@ function fetchFA(faPath) {
       res.on('data', c => body += c);
       res.on('end', () => resolve({ statusCode: res.statusCode, body }));
     });
-    req.on('error', (e) => resolve({ statusCode: 500, body: JSON.stringify({ error: e.message }) }));
+    req.on('error', (e) => resolve({ statusCode: 500, body: '{}' }));
     req.setTimeout(10000, () => { req.destroy(); resolve({ statusCode: 504, body: '{}' }); });
   });
 }
@@ -133,7 +154,7 @@ function toLocalTime(iso, offsetHours) {
   if (!iso) return null;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
-  const local = new Date(d.getTime() + offsetHours * 60 * 60 * 1000);
+  const local = new Date(d.getTime() + offsetHours * 3600000);
   return `${String(local.getUTCHours()).padStart(2,'0')}:${String(local.getUTCMinutes()).padStart(2,'0')}`;
 }
 
@@ -141,17 +162,16 @@ function toLocalDate(iso, offsetHours) {
   if (!iso) return '';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
-  const local = new Date(d.getTime() + offsetHours * 60 * 60 * 1000);
+  const local = new Date(d.getTime() + offsetHours * 3600000);
   return `${local.getUTCFullYear()}-${String(local.getUTCMonth()+1).padStart(2,'0')}-${String(local.getUTCDate()).padStart(2,'0')}`;
 }
 
 function tzOffset(ianaZone) {
   try {
     const now = new Date();
-    const utc   = now.toLocaleString('en-AU', { timeZone: 'UTC',    hour12: false, hour: '2-digit', minute: '2-digit' });
-    const local = now.toLocaleString('en-AU', { timeZone: ianaZone, hour12: false, hour: '2-digit', minute: '2-digit' });
-    const [uh, um] = utc.split(':').map(Number);
-    const [lh, lm] = local.split(':').map(Number);
+    const fmt = (tz) => now.toLocaleString('en-AU', { timeZone: tz, hour12: false, hour: '2-digit', minute: '2-digit' });
+    const [uh, um] = fmt('UTC').split(':').map(Number);
+    const [lh, lm] = fmt(ianaZone).split(':').map(Number);
     let diff = (lh * 60 + lm) - (uh * 60 + um);
     if (diff < -720) diff += 1440;
     if (diff >  720) diff -= 1440;
@@ -170,24 +190,27 @@ function timeToMins(t) {
 function flightStatus(fl) {
   const status = (fl.status || '').toLowerCase();
   let state = 'scheduled';
-  if (!!fl.actual_in || status.includes('arrived') || status.includes('gate arrival')) {
+  if (status.includes('cancel')) {
+    state = 'cancelled';
+  } else if (!!fl.actual_in || status.includes('arrived') || status.includes('gate arrival')) {
     state = 'arrived';
   } else if (
     !!fl.actual_out || !!fl.actual_off ||
     status.includes('departed') || status.includes('en route') ||
-    status.includes('active')   || status.includes('taxiing') ||
+    status.includes('active') || status.includes('taxiing') ||
     status.includes('airborne') || fl.progress_percent > 0
   ) { state = 'departed'; }
-  const depTz = tzOffset(fl.origin?.timezone      || 'Australia/Brisbane');
+
+  const depTz = tzOffset(fl.origin?.timezone || 'Australia/Brisbane');
   const arrTz = tzOffset(fl.destination?.timezone || 'Australia/Brisbane');
-  // Get the departure date in local time — use this as the flight's unique date
   const depIso = fl.scheduled_out || fl.scheduled_off || fl.actual_out || fl.actual_off;
-  const flightDate = toLocalDate(depIso, depTz);
+
   return {
-    state, status: fl.status || '',
-    flight_date:   flightDate,
-    actual_dep:    toLocalTime(fl.actual_out    || fl.actual_off, depTz),
-    actual_arr:    toLocalTime(fl.actual_in     || fl.actual_on,  arrTz),
+    state,
+    status: fl.status || '',
+    flight_date:   toLocalDate(depIso, depTz),
+    actual_dep:    toLocalTime(fl.actual_out || fl.actual_off, depTz),
+    actual_arr:    toLocalTime(fl.actual_in  || fl.actual_on,  arrTz),
     scheduled_dep: toLocalTime(fl.scheduled_out || fl.scheduled_off, depTz),
     scheduled_arr: toLocalTime(fl.scheduled_in  || fl.scheduled_on,  arrTz),
     estimated_dep: toLocalTime(fl.estimated_out || fl.estimated_off, depTz),
@@ -197,15 +220,15 @@ function flightStatus(fl) {
 
 function getBestFlight(flights) {
   const now = new Date();
-  // Prefer in-progress flight
+  // 1. In-progress flight
   let fl = flights.find(f => (f.progress_percent || 0) > 0 && f.progress_percent < 100);
   if (fl) return fl;
-  // Prefer flight departing closest to now (within -2h to +24h)
+  // 2. Closest departure within -2h to +24h
   const candidates = flights.filter(f => {
     const dep = f.scheduled_out || f.scheduled_off;
     if (!dep) return false;
-    const diffHours = (new Date(dep).getTime() - now.getTime()) / (1000 * 60 * 60);
-    return diffHours > -2 && diffHours < 24;
+    const diff = (new Date(dep).getTime() - now.getTime()) / 3600000;
+    return diff > -2 && diff < 24;
   });
   if (candidates.length) {
     candidates.sort((a, b) => {
@@ -231,43 +254,58 @@ function scoreEntries(entries, actualDep, actualArr) {
   }).sort((a, b) => (a.score ?? 9999) - (b.score ?? 9999));
 }
 
-const respond = (statusCode, headers, obj) => ({ statusCode, headers, body: JSON.stringify(obj) });
+function winnerResponse(w) {
+  if (!w) return { announced: false };
+  if (w.winner_seat === 'CANCELLED' || w.cancelled) return { announced: true, cancelled: true };
+  return {
+    announced: true,
+    cancelled: false,
+    winner: {
+      winner:    { seat: w.winner_seat, dep: w.winner_dep, arr: w.winner_arr, score: w.winner_score },
+      actualDep: w.actual_dep,
+      actualArr: w.actual_arr,
+      allScores: JSON.parse(w.all_scores || '[]'),
+      publishedAt: w.published_at
+    }
+  };
+}
 
-// ── Main handler ─────────────────────────────────────────────────
+const respond = (s, h, o) => ({ statusCode: s, headers: h, body: JSON.stringify(o) });
+
+// ── Handler ──────────────────────────────────────────────────────
 exports.handler = async (event) => {
-  const headers = {
+  const H = {
     'Access-Control-Allow-Origin':  '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: H, body: '' };
 
   const method = event.httpMethod;
   let p = '';
   try { p = new URL(event.rawUrl || event.path, 'https://x.x').pathname; } catch(e) { p = event.path || ''; }
   p = p.replace('/.netlify/functions/api', '');
   if (!p.startsWith('/')) p = '/' + p;
-  console.log('PATH:', p, method);
 
-  // GET /flight/QF559 or /flight/QF559_2026-03-30
+  // ── GET /flight/:key ──────────────────────────────────────────
   const flightMatch = p.match(/^\/flight\/([A-Z0-9_-]+)$/i);
   if (flightMatch && method === 'GET') {
     const { code, date } = parseFlightKey(flightMatch[1]);
     const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(code)}?max_pages=1`);
-    if (fa.statusCode !== 200) return respond(fa.statusCode, headers, { error: `FlightAware error ${fa.statusCode}` });
+    if (fa.statusCode !== 200) return respond(fa.statusCode, H, { error: `FlightAware error ${fa.statusCode}` });
     const data = JSON.parse(fa.body);
     const flights = data.flights || [];
-    if (!flights.length) return respond(404, headers, { error: 'Flight not found — check the number' });
+    if (!flights.length) return respond(404, H, { error: 'Flight not found — check the number' });
     const fl = getBestFlight(flights);
     const info = flightStatus(fl);
-    // If a date was given, use it; otherwise use what FlightAware gives us
     const useDate = date || info.flight_date;
+    // Overlay locked actuals from Supabase — these are always authoritative
     const actuals = await getActuals(code, useDate);
     if (actuals?.actual_dep) info.actual_dep = actuals.actual_dep;
     if (actuals?.actual_arr) info.actual_arr = actuals.actual_arr;
     info.flight_date = useDate;
     info.flight_key  = makeFlightKey(code, useDate);
-    return respond(200, headers, {
+    return respond(200, H, {
       code,
       from: fl.origin?.code_iata || fl.origin?.code || '???',
       to:   fl.destination?.code_iata || fl.destination?.code || '???',
@@ -275,247 +313,216 @@ exports.handler = async (event) => {
     });
   }
 
-  // GET /status/QF559 or /status/QF559_2026-03-30
+  // ── GET /status/:key — polls for departed/arrived, auto-locks, auto-awards ──
   const statusMatch = p.match(/^\/status\/([A-Z0-9_-]+)$/i);
   if (statusMatch && method === 'GET') {
     const { code, date } = parseFlightKey(statusMatch[1]);
     const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(code)}?max_pages=1`);
-    if (fa.statusCode !== 200) return respond(fa.statusCode, headers, { error: 'FA error' });
+    if (fa.statusCode !== 200) return respond(fa.statusCode, H, { error: 'FA error' });
     const data = JSON.parse(fa.body);
     const fl = getBestFlight(data.flights || [{}]);
-    const status = flightStatus(fl);
-    const useDate = date || status.flight_date;
+    const info = flightStatus(fl);
+    const useDate = date || info.flight_date;
 
-    if (status.actual_dep || status.actual_arr) {
-      const existing = await getActuals(code, useDate);
-      const needsUpdate = !existing ||
-        (status.actual_dep && !existing.actual_dep) ||
-        (status.actual_arr && !existing.actual_arr);
+    // Always check Supabase actuals first — they are the locked truth
+    const existing = await getActuals(code, useDate);
 
-      if (needsUpdate) {
-        const newDep = status.actual_dep || existing?.actual_dep || null;
-        const newArr = status.actual_arr || existing?.actual_arr || null;
+    // If FA has new data, lock it permanently (never overwrite existing with null)
+    const newDep = info.actual_dep || existing?.actual_dep || null;
+    const newArr = info.actual_arr || existing?.actual_arr || null;
+
+    if (newDep || newArr) {
+      const hasNew = (newDep && !existing?.actual_dep) || (newArr && !existing?.actual_arr);
+      if (hasNew) {
         await upsertActuals(code, useDate, newDep, newArr);
-        console.log(`Locked actuals for ${code} ${useDate}: dep=${newDep} arr=${newArr}`);
-
-        if (newDep && newArr) {
-          const alreadyWon = await getWinner(code, useDate);
-          if (!alreadyWon) {
-            const entries = await getEntries(code, useDate);
-            if (entries.length > 0) {
-              const scored = scoreEntries(entries, newDep, newArr);
-              const winner = scored[0];
-              await upsertWinner(code, useDate, {
-                winner_seat: winner.seat,
-                winner_dep:  winner.dep_time,
-                winner_arr:  winner.arr_time,
-                winner_score: winner.score,
-                actual_dep: newDep,
-                actual_arr: newArr,
-                all_scores: JSON.stringify(scored),
-                published_at: new Date().toISOString(),
-                auto_awarded: true
-              });
-              console.log(`Auto-awarded winner for ${code} ${useDate}: Seat ${winner.seat}`);
-              status.winner = winner;
-            }
-          }
-        }
-        status.actual_dep = newDep || status.actual_dep;
-        status.actual_arr = newArr || status.actual_arr;
-      } else if (existing) {
-        status.actual_dep = existing.actual_dep || status.actual_dep;
-        status.actual_arr = existing.actual_arr || status.actual_arr;
+        console.log(`Locked actuals ${code} ${useDate}: dep=${newDep} arr=${newArr}`);
+      }
+      // Auto-award winner when both times are locked
+      if (newDep && newArr) {
+        await maybeAwardWinner(code, useDate, newDep, newArr);
       }
     }
-    status.flight_key = makeFlightKey(code, useDate);
-    return respond(200, headers, status);
+
+    return respond(200, H, {
+      ...info,
+      actual_dep: newDep,
+      actual_arr: newArr,
+      flight_key: makeFlightKey(code, useDate)
+    });
   }
 
-  // GET /picks/QF559 or /picks/QF559_2026-03-30
+  // ── GET /picks/:key ───────────────────────────────────────────
   const getPicksMatch = p.match(/^\/picks\/([A-Z0-9_-]+)$/i);
   if (getPicksMatch && method === 'GET') {
     const { code, date } = parseFlightKey(getPicksMatch[1]);
     const entries = await getEntries(code, date);
     const result = {};
     entries.forEach(e => { result[`${e.dep_time}|${e.arr_time}`] = e.seat; });
-    return respond(200, headers, result);
+    return respond(200, H, result);
   }
 
-  // GET /picks/QF559_2026-03-30/dep/09:11
+  // ── GET /picks/:key/dep/:time ─────────────────────────────────
   const depPicksMatch = p.match(/^\/picks\/([A-Z0-9_-]+)\/dep\/(.+)$/i);
   if (depPicksMatch && method === 'GET') {
     const { code, date } = parseFlightKey(depPicksMatch[1]);
     const depTime = decodeURIComponent(depPicksMatch[2]);
     const entries = await getEntries(code, date);
-    const arrTaken = {};
-    entries.filter(e => e.dep_time === depTime).forEach(e => { arrTaken[e.arr_time] = e.seat; });
-    return respond(200, headers, arrTaken);
+    const taken = {};
+    entries.filter(e => e.dep_time === depTime).forEach(e => { taken[e.arr_time] = e.seat; });
+    return respond(200, H, taken);
   }
 
-  // POST /picks/QF559_2026-03-30
+  // ── POST /picks/:key — submit entry ──────────────────────────
   const postPicksMatch = p.match(/^\/picks\/([A-Z0-9_-]+)$/i);
   if (postPicksMatch && method === 'POST') {
     const { code, date } = parseFlightKey(postPicksMatch[1]);
     const { dep, arr, seat } = JSON.parse(event.body || '{}');
-    if (!dep || !arr || !seat) return respond(400, headers, { error: 'Need dep, arr, seat' });
-
+    if (!dep || !arr || !seat) return respond(400, H, { error: 'Need dep, arr, seat' });
     const existing = await getEntries(code, date);
     const taken = existing.find(e => e.dep_time === dep && e.arr_time === arr);
-    if (taken) return respond(409, headers, { error: 'combo_taken', takenBy: taken.seat });
-
+    if (taken) return respond(409, H, { error: 'combo_taken', takenBy: taken.seat });
     const r = await insertEntry({
-      flight_code: code,
-      flight_date: date || '',
-      seat,
-      dep_time: dep,
-      arr_time: arr,
-      mobile: '',
-      boarding_pass: null,
+      flight_code: code, flight_date: date || '',
+      seat, dep_time: dep, arr_time: arr,
+      mobile: '', boarding_pass: null,
       created_at: new Date().toISOString()
     });
-    if (r.statusCode !== 201) return respond(500, headers, { error: 'Failed to save entry' });
-    return respond(200, headers, { ok: true });
+    if (r.statusCode !== 201) return respond(500, H, { error: 'Failed to save entry' });
+    return respond(200, H, { ok: true });
   }
 
-  // POST /picks/QF559_2026-03-30/update
+  // ── POST /picks/:key/update — add mobile + boarding pass ──────
   const updateMatch = p.match(/^\/picks\/([A-Z0-9_-]+)\/update$/i);
   if (updateMatch && method === 'POST') {
     const { code, date } = parseFlightKey(updateMatch[1]);
-    const { dep, arr, seat, mobile, boardingPass } = JSON.parse(event.body || '{}');
+    const { dep, arr, mobile, boardingPass } = JSON.parse(event.body || '{}');
     await updateEntry(code, date, dep, arr, { mobile: mobile || '', boarding_pass: boardingPass || null });
-    return respond(200, headers, { ok: true });
+    return respond(200, H, { ok: true });
   }
 
-  // GET /winner/QF559 or /winner/QF559_2026-03-30
+  // ── GET /winner/:key ──────────────────────────────────────────
   const winnerMatch = p.match(/^\/winner\/([A-Z0-9_-]+)$/i);
   if (winnerMatch && method === 'GET') {
     const { code, date } = parseFlightKey(winnerMatch[1]);
-    const winner = await getWinner(code, date);
-    if (!winner) return respond(200, headers, { announced: false });
-    // Check if flight was cancelled
-    if (winner.winner_seat === 'CANCELLED') {
-      return respond(200, headers, { announced: true, cancelled: true });
-    }
-    return respond(200, headers, {
-      announced: true,
-      cancelled: false,
-      winner: {
-        winner: { seat: winner.winner_seat, dep: winner.winner_dep, arr: winner.winner_arr, score: winner.winner_score, depDiff: null, arrDiff: null },
-        actualDep: winner.actual_dep,
-        actualArr: winner.actual_arr,
-        allScores: JSON.parse(winner.all_scores || '[]'),
-        publishedAt: winner.published_at
-      }
-    });
+    const w = await getWinner(code, date);
+    return respond(200, H, winnerResponse(w));
   }
 
-  // GET /admin
+  // ── GET /admin ────────────────────────────────────────────────
   const adminMatch = p.match(/^\/admin$/i);
   if (adminMatch && method === 'GET') {
-    const key    = (event.queryStringParameters || {}).key || '';
-    const flight = ((event.queryStringParameters || {}).flight || '').toUpperCase();
-    if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
+    const qs = event.queryStringParameters || {};
+    if (qs.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
+    const flight = (qs.flight || '').toUpperCase();
 
     if (flight) {
       const { code, date } = parseFlightKey(flight);
-      const entries = await getEntries(code, date);
-      const actuals = await getActuals(code, date);
-      const winner  = await getWinner(code, date);
-      return respond(200, headers, { flight, entries, actuals, winner });
+      const [entries, actuals, winner] = await Promise.all([
+        getEntries(code, date), getActuals(code, date), getWinner(code, date)
+      ]);
+      return respond(200, H, { flight, entries, actuals, winner });
     }
 
     const [allEntries, allWinnerRows] = await Promise.all([getAllEntries(), getAllWinners()]);
     const flights = {};
     allEntries.forEach(e => {
-      const fkey = makeFlightKey(e.flight_code, e.flight_date);
-      if (!flights[fkey]) flights[fkey] = [];
+      const fk = makeFlightKey(e.flight_code, e.flight_date);
+      if (!flights[fk]) flights[fk] = [];
       const { boarding_pass, ...rest } = e;
-      flights[fkey].push({ ...rest, has_boarding_pass: !!boarding_pass });
+      flights[fk].push({ ...rest, has_boarding_pass: !!boarding_pass });
     });
-    // Build winners map keyed by flight_key
     const winners = {};
     allWinnerRows.forEach(w => {
-      const fkey = makeFlightKey(w.flight_code, w.flight_date);
-      winners[fkey] = {
-        winner: { seat: w.winner_seat, dep: w.winner_dep, arr: w.winner_arr, score: w.winner_score },
-        actualDep: w.actual_dep,
-        actualArr: w.actual_arr,
-        allScores: JSON.parse(w.all_scores || '[]'),
+      const fk = makeFlightKey(w.flight_code, w.flight_date);
+      winners[fk] = {
+        cancelled:  w.winner_seat === 'CANCELLED' || !!w.cancelled,
+        winner:     { seat: w.winner_seat, dep: w.winner_dep, arr: w.winner_arr, score: w.winner_score },
+        actualDep:  w.actual_dep,
+        actualArr:  w.actual_arr,
+        allScores:  JSON.parse(w.all_scores || '[]'),
         publishedAt: w.published_at,
         flightDate: w.flight_date
       };
     });
-    return respond(200, headers, { flights, winners });
+    return respond(200, H, { flights, winners });
   }
 
-  // POST /admin/winner
+  // ── POST /admin/winner — manual publish ───────────────────────
   if (p === '/admin/winner' && method === 'POST') {
     const body = JSON.parse(event.body || '{}');
-    if (body.key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
+    if (body.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
     const { flight, winner, actualDep, actualArr, allScores } = body;
     const { code, date } = parseFlightKey(flight);
+    // Also lock actuals permanently
+    await upsertActuals(code, date, actualDep, actualArr);
     await upsertWinner(code, date, {
-      winner_seat: winner.seat,
-      winner_dep:  winner.dep,
-      winner_arr:  winner.arr,
-      winner_score: winner.score,
-      actual_dep: actualDep,
-      actual_arr: actualArr,
+      winner_seat: winner.seat, winner_dep: winner.dep,
+      winner_arr: winner.arr,  winner_score: winner.score,
+      actual_dep: actualDep,   actual_arr: actualArr,
       all_scores: JSON.stringify(allScores),
       published_at: new Date().toISOString(),
-      auto_awarded: false
+      auto_awarded: false, cancelled: false
     });
-    return respond(200, headers, { ok: true });
+    return respond(200, H, { ok: true });
   }
 
-  // GET /admin/bp/QF559_2026-03-30/11:38/14:19
-  const bpMatch = p.match(/^\/admin\/bp\/([A-Z0-9_-]+)\/(.+)\/(.+)$/i);
-  if (bpMatch && method === 'GET') {
-    const key = (event.queryStringParameters || {}).key || '';
-    if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
-    const { code, date } = parseFlightKey(bpMatch[1]);
-    const dep  = decodeURIComponent(bpMatch[2]);
-    const arr  = decodeURIComponent(bpMatch[3]);
-    const entries = await getEntries(code, date);
-    const entry = entries.find(e => e.dep_time === dep && e.arr_time === arr);
-    return respond(200, headers, { boarding_pass: entry?.boarding_pass || null });
+  // ── POST /admin/lock — lock actuals + auto-award ──────────────
+  if (p === '/admin/lock' && method === 'POST') {
+    const body = JSON.parse(event.body || '{}');
+    if (body.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
+    const { flight, actual_dep, actual_arr } = body;
+    const { code, date } = parseFlightKey(flight);
+    // Never overwrite an existing locked value with null
+    const existing = await getActuals(code, date);
+    const newDep = actual_dep || existing?.actual_dep || null;
+    const newArr = actual_arr || existing?.actual_arr || null;
+    await upsertActuals(code, date, newDep, newArr);
+    console.log(`Admin locked ${code} ${date}: dep=${newDep} arr=${newArr}`);
+    let winnerSeat = null;
+    if (newDep && newArr) {
+      const w = await maybeAwardWinner(code, date, newDep, newArr);
+      if (w) winnerSeat = w.seat;
+    }
+    return respond(200, H, { ok: true, actual_dep: newDep, actual_arr: newArr, winner: winnerSeat });
   }
 
-  // DELETE /admin/picks/QF559_2026-03-30/dep|arr
-  const deleteMatch = p.match(/^\/admin\/picks\/([A-Z0-9_-]+)\/(.+)$/i);
-  if (deleteMatch && method === 'DELETE') {
-    const key = (event.queryStringParameters || {}).key || '';
-    if (key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
-    const { code, date } = parseFlightKey(deleteMatch[1]);
-    const combo = decodeURIComponent(deleteMatch[2]);
-    const [dep, arr] = combo.split('|');
-    await deleteEntry(code, date, dep, arr);
-    return respond(200, headers, { ok: true });
-  }
-
-  // POST /admin/cancel
+  // ── POST /admin/cancel ────────────────────────────────────────
   if (p === '/admin/cancel' && method === 'POST') {
     const body = JSON.parse(event.body || '{}');
-    if (body.key !== ADMIN_KEY) return respond(403, headers, { error: 'Forbidden' });
-    const { flight } = body;
-    const { code, date } = parseFlightKey(flight);
-    // Store cancellation as a special winner record with cancelled flag
+    if (body.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
+    const { code, date } = parseFlightKey(body.flight || '');
     await upsertWinner(code, date, {
-      winner_seat: 'CANCELLED',
-      winner_dep: null,
-      winner_arr: null,
-      winner_score: null,
-      actual_dep: null,
-      actual_arr: null,
-      all_scores: '[]',
-      published_at: new Date().toISOString(),
-      auto_awarded: false,
-      cancelled: true
+      winner_seat: 'CANCELLED', winner_dep: null, winner_arr: null, winner_score: null,
+      actual_dep: null, actual_arr: null, all_scores: '[]',
+      published_at: new Date().toISOString(), auto_awarded: false, cancelled: true
     });
-    console.log(`Flight ${code} ${date} marked as cancelled`);
-    return respond(200, headers, { ok: true });
+    console.log(`Cancelled ${code} ${date}`);
+    return respond(200, H, { ok: true });
   }
 
-  return respond(404, headers, { error: 'Not found' });
+  // ── GET /admin/bp/:key/:dep/:arr ──────────────────────────────
+  const bpMatch = p.match(/^\/admin\/bp\/([A-Z0-9_-]+)\/(.+)\/(.+)$/i);
+  if (bpMatch && method === 'GET') {
+    const qs = event.queryStringParameters || {};
+    if (qs.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
+    const { code, date } = parseFlightKey(bpMatch[1]);
+    const dep = decodeURIComponent(bpMatch[2]);
+    const arr = decodeURIComponent(bpMatch[3]);
+    const entries = await getEntries(code, date);
+    const entry = entries.find(e => e.dep_time === dep && e.arr_time === arr);
+    return respond(200, H, { boarding_pass: entry?.boarding_pass || null });
+  }
+
+  // ── DELETE /admin/picks/:key/:combo ───────────────────────────
+  const deleteMatch = p.match(/^\/admin\/picks\/([A-Z0-9_-]+)\/(.+)$/i);
+  if (deleteMatch && method === 'DELETE') {
+    const qs = event.queryStringParameters || {};
+    if (qs.key !== ADMIN_KEY) return respond(403, H, { error: 'Forbidden' });
+    const { code, date } = parseFlightKey(deleteMatch[1]);
+    const [dep, arr] = decodeURIComponent(deleteMatch[2]).split('|');
+    await deleteEntry(code, date, dep, arr);
+    return respond(200, H, { ok: true });
+  }
+
+  return respond(404, H, { error: 'Not found' });
 };
