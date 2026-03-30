@@ -102,6 +102,11 @@ async function getWinner(code, date) {
   return Array.isArray(r.data) && r.data.length ? r.data[0] : null;
 }
 
+async function getAllWinners() {
+  const r = await sbRequest('GET', 'winners?order=published_at.desc');
+  return Array.isArray(r.data) ? r.data : [];
+}
+
 async function upsertWinner(code, date, winnerData) {
   await sbRequest('DELETE', `winners?${codeFilter(code, date)}`, null);
   return sbRequest('POST', 'winners', { flight_code: code, flight_date: date || '', ...winnerData });
@@ -415,16 +420,28 @@ exports.handler = async (event) => {
       return respond(200, headers, { flight, entries, actuals, winner });
     }
 
-    const allEntries = await getAllEntries();
+    const [allEntries, allWinnerRows] = await Promise.all([getAllEntries(), getAllWinners()]);
     const flights = {};
     allEntries.forEach(e => {
-      // Group by code+date so today's QF9 and yesterday's QF9 are separate
-      const key = makeFlightKey(e.flight_code, e.flight_date);
-      if (!flights[key]) flights[key] = [];
+      const fkey = makeFlightKey(e.flight_code, e.flight_date);
+      if (!flights[fkey]) flights[fkey] = [];
       const { boarding_pass, ...rest } = e;
-      flights[key].push({ ...rest, has_boarding_pass: !!boarding_pass });
+      flights[fkey].push({ ...rest, has_boarding_pass: !!boarding_pass });
     });
-    return respond(200, headers, { flights });
+    // Build winners map keyed by flight_key
+    const winners = {};
+    allWinnerRows.forEach(w => {
+      const fkey = makeFlightKey(w.flight_code, w.flight_date);
+      winners[fkey] = {
+        winner: { seat: w.winner_seat, dep: w.winner_dep, arr: w.winner_arr, score: w.winner_score },
+        actualDep: w.actual_dep,
+        actualArr: w.actual_arr,
+        allScores: JSON.parse(w.all_scores || '[]'),
+        publishedAt: w.published_at,
+        flightDate: w.flight_date
+      };
+    });
+    return respond(200, headers, { flights, winners });
   }
 
   // POST /admin/winner

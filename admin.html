@@ -446,7 +446,8 @@
             <div style="margin-bottom:20px;border:1px solid #334155;border-radius:10px;overflow:hidden;">
               <div style="background:#1e293b;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
                 <div>
-                  <span style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#f59e0b;">✈️ ${code}</span>
+                  <span style="font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;color:#f59e0b;">✈️ ${code.split('_')[0]}</span>
+                  ${w.flightDate ? `<span style="margin-left:8px;font-size:0.75rem;color:#a855f7;font-weight:700;">${w.flightDate}</span>` : ''}
                   <span style="margin-left:10px;font-size:0.75rem;color:#64748b;">${entryCount} entries</span>
                 </div>
                 <div style="font-size:0.75rem;color:#64748b;">
