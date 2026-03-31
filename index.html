@@ -795,9 +795,12 @@
   </div>
 
   <div class="search-panel" style="margin-top:24px;padding:24px 20px;">
-    <h2>Enter your flight number</h2>
+    <div style="text-align:center;margin-bottom:16px;">
+      <img src="/REXlogo.png" alt="Rex Regional Express" style="height:60px;object-fit:contain;">
+    </div>
+    <h2 style="text-align:center;margin-bottom:12px;">Enter your Rex flight number</h2>
     <div class="search-wrap">
-      <input id="search-input" class="search-input" placeholder="e.g. QF531" onkeydown="if(event.key==='Enter')filterFlights()">
+      <input id="search-input" class="search-input" placeholder="e.g. ZL5733" onkeydown="if(event.key==='Enter')filterFlights()">
       <button class="search-btn" onclick="filterFlights()">Go</button>
     </div>
     <div style="text-align:center;margin-top:12px;">
@@ -1477,6 +1480,13 @@
     const q = document.getElementById('search-input').value.trim().toUpperCase();
     if (!q) { showToast('Enter a flight number'); return; }
 
+    // Rex Airlines only — ZL or RX prefix
+    const isRex = q.startsWith('ZL') || q.startsWith('RX') || q.startsWith('RXA');
+    if (!isRex) {
+      showNonRexPopup();
+      return;
+    }
+
     const btn = document.querySelector('.search-btn');
     btn.textContent = '...';
     btn.disabled = true;
@@ -1938,6 +1948,32 @@
     } catch(e) {
       el.innerHTML = '<div style="text-align:center;color:#ef4444;padding:40px 0;">Could not load flights</div>';
     }
+  }
+
+
+  // ── Non-Rex popup ─────────────────────────────────────────────
+  function showNonRexPopup() {
+    const existing = document.getElementById('non-rex-modal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'non-rex-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:20px;padding:32px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <img src="/REXlogo.png" alt="Rex" style="height:50px;object-fit:contain;margin-bottom:16px;">
+        <div style="font-size:2rem;margin-bottom:12px;">😎</div>
+        <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.2rem;color:#1e3a5f;margin-bottom:12px;">
+          Rex were the only cool dudes who wanted to play!
+        </div>
+        <div style="font-size:0.9rem;color:#64748b;line-height:1.6;margin-bottom:24px;">
+          Next time you fly Rex, make sure you play Airport Gate Sweep!
+        </div>
+        <button onclick="document.getElementById('non-rex-modal').remove();document.getElementById('search-input').value='';"
+          style="width:100%;padding:14px;background:#1d4ed8;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:12px;cursor:pointer;">
+          Got it! ✈️
+        </button>
+      </div>`;
+    document.body.appendChild(modal);
   }
 
   // ── Results / Winners page ────────────────────────────────────
