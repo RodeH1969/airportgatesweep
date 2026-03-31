@@ -1890,7 +1890,7 @@
     const el = document.getElementById('active-content');
     el.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:40px 0;">Loading live flights…</div>';
     try {
-      const r    = await fetch('/.netlify/functions/api/active');
+      const r    = await fetch('/api/active');
       const data = await r.json();
       const flights = data.flights || [];
       if (!flights.length) {
@@ -1939,7 +1939,7 @@
     document.getElementById('results-content').innerHTML =
       '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:0.9rem;">Loading…</div>';
     try {
-      const r = await fetch('/.netlify/functions/api/results');
+      const r = await fetch('/api/results');
       const data = await r.json();
       resultsCache = data.winners || [];
       renderResultsDates(resultsCache);
