@@ -133,7 +133,7 @@ async function maybeAwardWinner(code, date, faId, depTime, arrTime) {
   if (winner.score === null) { console.log(`[poller] Cannot score yet for ${code}`); return; }
 
   // Delete any existing winner record then insert
-  await sbRequest('DELETE', `winners?${filter}`, null);
+  await sbRequest('DELETE', `winners?${codeFilter}`, null);
   await sbRequest('POST', 'winners', {
     flight_code:  code,
     flight_date:  date,
@@ -230,23 +230,26 @@ async function pollAllActiveFlights() {
 
       console.log(`[poller] ${key}: dep=${newDep||'—'} arr=${newArr||'—'}`);
 
-      // Lock dep the moment it appears — NEVER overwrite with null
+      // Lock dep the moment it appears — NEVER overwrite a locked value with null
       const depToSave = newDep || existing?.actual_dep || null;
       const arrToSave = newArr || existing?.actual_arr || null;
 
-      if (depToSave !== existing?.actual_dep || arrToSave !== existing?.actual_arr) {
-        if (depToSave) {
-          console.log(`[poller] LOCKING ${key}: dep=${depToSave} arr=${arrToSave||'pending'}`);
-          await sbRequest('DELETE', `actuals?${actFilter}`, null);
-          await sbRequest('POST', 'actuals', {
-            flight_code:  code,
-            flight_date:  date,
-            fa_flight_id: useFaId,
-            actual_dep:   depToSave,
-            actual_arr:   arrToSave || null,
-            updated_at:   new Date().toISOString()
-          });
-        }
+      const depChanged = depToSave && depToSave !== existing?.actual_dep;
+      const arrChanged = arrToSave && arrToSave !== existing?.actual_arr;
+
+      if (depChanged || arrChanged) {
+        console.log(`[poller] LOCKING ${key}: dep=${depToSave} arr=${arrToSave||'pending'}`);
+        // Delete by both possible filters to handle legacy entries with no date
+        await sbRequest('DELETE', `actuals?${actFilter}`, null);
+        if (useFaId) await sbRequest('DELETE', `actuals?fa_flight_id=eq.${encodeURIComponent(useFaId)}`, null);
+        await sbRequest('POST', 'actuals', {
+          flight_code:  code,
+          flight_date:  date,
+          fa_flight_id: useFaId,
+          actual_dep:   depToSave,
+          actual_arr:   arrToSave || null,
+          updated_at:   new Date().toISOString()
+        });
       }
 
       // Award winner if both known
