@@ -590,18 +590,48 @@ exports.handler = async (event) => {
   // ── GET /results — public winners feed ───────────────────────
   if (p === '/results' && method === 'GET') {
     const allWinnerRows = await getAllWinners();
-    const winners = allWinnerRows.map(w => ({
-      flightCode:  w.flight_code,
-      flightDate:  w.flight_date,
-      faFlightId:  w.fa_flight_id || '',
-      cancelled:   w.winner_seat === 'CANCELLED' || !!w.cancelled,
-      winner:      { seat: w.winner_seat, score: w.winner_score },
-      actualDep:   w.actual_dep,
-      actualArr:   w.actual_arr,
-      allScores:   JSON.parse(w.all_scores || '[]'),
-      publishedAt: w.published_at
-    }));
+    const winners = allWinnerRows
+      .filter(w => w.winner_seat && w.winner_seat !== 'CANCELLED' && !w.cancelled)
+      .map(w => {
+        let allScores = [];
+        try {
+          allScores = JSON.parse(w.all_scores || '[]')
+            .map(({ boarding_pass, ...s }) => s);
+        } catch(e) { allScores = []; }
+        return {
+          flightCode:  w.flight_code,
+          flightDate:  w.flight_date,
+          cancelled:   false,
+          winner:      { seat: w.winner_seat, score: w.winner_score },
+          actualDep:   w.actual_dep,
+          actualArr:   w.actual_arr,
+          allScores,
+          publishedAt: w.published_at
+        };
+      });
     return respond(200, H, { winners });
+  }
+
+  // ── GET /active — public list of flights with entries but no winner ──
+  if (p === '/active' && method === 'GET') {
+    const [allEntries, allWinnerRows] = await Promise.all([
+      sbRequest('GET', 'entries?select=flight_code,flight_date,fa_flight_id,dep_time,arr_time,seat,created_at&order=created_at.asc'),
+      sbRequest('GET', 'winners?select=flight_code,flight_date')
+    ]);
+    const entries  = Array.isArray(allEntries.data)  ? allEntries.data  : [];
+    const wonSet   = new Set(
+      (Array.isArray(allWinnerRows.data) ? allWinnerRows.data : [])
+        .map(w => `${w.flight_code}_${w.flight_date}`)
+    );
+    // Group entries by flight, exclude decided flights
+    const flights = {};
+    entries.forEach(e => {
+      const fk = `${e.flight_code}_${e.flight_date || ''}`;
+      if (wonSet.has(fk)) return;
+      if (!flights[fk]) flights[fk] = { code: e.flight_code, date: e.flight_date || '', picks: [] };
+      flights[fk].picks.push({ seat: e.seat, dep: e.dep_time, arr: e.arr_time });
+    });
+    return respond(200, H, { flights: Object.values(flights) });
   }
 
   return respond(404, H, { error: 'Not found' });

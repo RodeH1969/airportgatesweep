@@ -801,12 +801,14 @@
       <button class="search-btn" onclick="filterFlights()">Go</button>
     </div>
     <div style="text-align:center;margin-top:12px;">
-      <button onclick="viewPicksOnly()" style="background:none;border:none;color:#2563eb;font-family:Nunito,sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;text-decoration:underline;">
-        👀 Just view picks for a flight →
-      </button>
-      <button onclick="showResultsPage()" style="background:none;border:none;color:#f59e0b;font-family:Nunito,sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;text-decoration:underline;margin-top:6px;">
-        🏆 View past winners →
-      </button>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
+        <button onclick="showActivePage()" style="background:#eff6ff;border:2px solid #2563eb;color:#2563eb;font-family:Nunito,sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;padding:8px 18px;border-radius:20px;">
+          ✈️ Live Flights &amp; Picks
+        </button>
+        <button onclick="showResultsPage()" style="background:#fffbeb;border:2px solid #f59e0b;color:#b45309;font-family:Nunito,sans-serif;font-weight:900;font-size:0.85rem;cursor:pointer;padding:8px 18px;border-radius:20px;">
+          🏆 Past Winners
+        </button>
+      </div>
     </div>
     <div style="display:none">
     </div>
@@ -1882,6 +1884,52 @@
   }
 
 
+  // ── Live Flights page ────────────────────────────────────────
+  async function showActivePage() {
+    showPage('page-active');
+    const el = document.getElementById('active-content');
+    el.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:40px 0;">Loading live flights…</div>';
+    try {
+      const r    = await fetch('/.netlify/functions/api/active');
+      const data = await r.json();
+      const flights = data.flights || [];
+      if (!flights.length) {
+        el.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:40px 0;">No active flights right now — be the first to enter!</div>';
+        return;
+      }
+      el.innerHTML = flights.map(f => {
+        const rows = (f.picks || []).map((p, i) => `
+          <tr style="${i===0?'background:rgba(37,99,235,0.04);':''}">
+            <td style="padding:6px 10px;font-family:Nunito,sans-serif;font-weight:900;color:#1e3a5f;">${p.seat}</td>
+            <td style="padding:6px 10px;color:#2563eb;font-weight:700;">${p.dep}</td>
+            <td style="padding:6px 10px;color:#2563eb;font-weight:700;">${p.arr}</td>
+          </tr>`).join('');
+        return `
+          <div style="background:#fff;border:1.5px solid #c8dff5;border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 12px rgba(37,99,235,0.08);">
+            <div style="background:#1e3a5f;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;"
+                 onclick="document.getElementById('search-input').value='${f.code}';filterFlights();">
+              <div style="font-family:Nunito,sans-serif;font-weight:900;color:#f59e0b;font-size:1rem;">✈️ ${f.code}</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.72rem;color:#93c5fd;">${f.date}</span>
+                <span style="font-size:0.72rem;background:#2563eb;color:#fff;padding:2px 8px;border-radius:10px;font-weight:700;">${f.picks.length} ${f.picks.length===1?'pick':'picks'}</span>
+                <span style="color:#f59e0b;font-size:0.85rem;">▶ Play</span>
+              </div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+              <thead><tr style="background:#f0f7ff;">
+                <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">Seat</th>
+                <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">Dep Pick</th>
+                <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">Arr Pick</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      }).join('');
+    } catch(e) {
+      el.innerHTML = '<div style="text-align:center;color:#ef4444;padding:40px 0;">Could not load flights</div>';
+    }
+  }
+
   // ── Results / Winners page ────────────────────────────────────
   let resultsCache = null;
 
@@ -2010,22 +2058,33 @@
 
 </script>
 
-<!-- RESULTS PAGE -->
+<!-- LIVE FLIGHTS PAGE -->
+<section id="page-active" class="page">
+  <div style="max-width:420px;margin:0 auto;padding:16px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <button onclick="showPage('page-search')" style="background:none;border:none;color:#2563eb;font-size:1.4rem;cursor:pointer;padding:0;">←</button>
+      <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.3rem;color:#1e3a5f;">✈️ Live Flights & Picks</div>
+    </div>
+    <div id="active-content">
+      <div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:0.9rem;">Loading…</div>
+    </div>
+    <button onclick="showPage('page-search')" style="width:100%;margin-top:20px;padding:14px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
+      ✈️ Enter a Flight
+    </button>
+  </div>
+</section>
+
+<!-- PAST WINNERS PAGE -->
 <section id="page-results" class="page">
   <div style="max-width:420px;margin:0 auto;padding:16px;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
       <button onclick="showPage('page-search')" style="background:none;border:none;color:#2563eb;font-size:1.4rem;cursor:pointer;padding:0;">←</button>
       <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.3rem;color:#1e3a5f;">🏆 Past Winners</div>
     </div>
-
-    <!-- Date selector -->
     <div id="results-date-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;"></div>
-
-    <!-- Results for selected date -->
     <div id="results-content">
-      <div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:0.9rem;">Loading results…</div>
+      <div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:0.9rem;">Loading…</div>
     </div>
-
     <button onclick="showPage('page-search')" style="width:100%;margin-top:20px;padding:14px;background:#1e3a5f;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
       ✈️ Play Now
     </button>
