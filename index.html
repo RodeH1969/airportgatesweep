@@ -1890,9 +1890,19 @@
     const el = document.getElementById('active-content');
     el.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:40px 0;">Loading live flights…</div>';
     try {
-      const r    = await fetch('/api/active');
+      const r    = await fetch('/.netlify/functions/api/admin?key=AGS2026admin');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json();
-      const flights = data.flights || [];
+      const winnersObj = data.winners || {};
+      const decidedKeys = new Set(Object.keys(winnersObj));
+      const allFlights = data.flights || {};
+      const flights = Object.entries(allFlights)
+        .filter(([key]) => !decidedKeys.has(key))
+        .map(([key, entries]) => ({
+          code: key.split('_')[0],
+          date: key.split('_')[1] || '',
+          picks: entries.map(e => ({ seat: e.seat, dep: e.dep_time, arr: e.arr_time }))
+        }));
       if (!flights.length) {
         el.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:40px 0;">No active flights right now — be the first to enter!</div>';
         return;
@@ -1931,18 +1941,28 @@
   }
 
   // ── Results / Winners page ────────────────────────────────────
-  let resultsCache = null;
-
   async function showResultsPage() {
     showPage('page-results');
-    if (resultsCache) { renderResultsDates(resultsCache); return; }
     document.getElementById('results-content').innerHTML =
       '<div style="text-align:center;color:#94a3b8;padding:40px 0;font-size:0.9rem;">Loading…</div>';
     try {
-      const r = await fetch('/api/results');
+      const r = await fetch('/.netlify/functions/api/admin?key=AGS2026admin');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json();
-      resultsCache = data.winners || [];
-      renderResultsDates(resultsCache);
+      // Convert winners object to array, filter only confirmed winners
+      const winnersObj = data.winners || {};
+      const winners = Object.entries(winnersObj)
+        .filter(([, w]) => !w.cancelled && w.winner && w.winner.seat)
+        .map(([key, w]) => ({
+          flightCode: key.split('_')[0],
+          flightDate: w.flightDate || key.split('_')[1] || '',
+          winner: w.winner,
+          actualDep: w.actualDep,
+          actualArr: w.actualArr,
+          allScores: w.allScores || [],
+          publishedAt: w.publishedAt
+        }));
+      renderResultsDates(winners);
     } catch(e) {
       document.getElementById('results-content').innerHTML =
         '<div style="text-align:center;color:#ef4444;padding:40px 0;">Could not load results</div>';
@@ -1953,13 +1973,13 @@
     // Group by date
     const byDate = {};
     winners.forEach(w => {
-      const d = w.flightDate || '—';
+      const d = w.flightDate || w.flightCode || '—';
       if (!byDate[d]) byDate[d] = [];
       byDate[d].push(w);
     });
     const dates = Object.keys(byDate).sort().reverse();
 
-    if (!dates.length) {
+    if (!dates.length || (dates.length === 1 && dates[0] === '—' && !winners.length)) {
       document.getElementById('results-date-tabs').innerHTML = '';
       document.getElementById('results-content').innerHTML =
         '<div style="text-align:center;color:#94a3b8;padding:40px 0;">No results yet — check back after flights land!</div>';
