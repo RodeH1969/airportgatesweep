@@ -340,9 +340,10 @@ exports.handler = async (event) => {
     const actuals = await getActuals(code, useDate, faId);
     if (actuals?.actual_dep) info.actual_dep = actuals.actual_dep;
     if (actuals?.actual_arr) info.actual_arr = actuals.actual_arr;
-    info.flight_date = useDate;
-    info.flight_key  = makeFlightKey(code, useDate);
-    info.fa_flight_id = faId;
+    info.flight_date      = useDate;
+    info.flight_key       = makeFlightKey(code, useDate);
+    info.fa_flight_id     = faId;
+    info.scheduled_out_utc = fl.scheduled_out || fl.scheduled_off || '';
     return respond(200, H, {
       code,
       from: fl.origin?.code_iata || fl.origin?.code || '???',
@@ -431,15 +432,16 @@ exports.handler = async (event) => {
   const postPicksMatch = p.match(/^\/picks\/([A-Z0-9_-]+)$/i);
   if (postPicksMatch && method === 'POST') {
     const { code, date } = parseFlightKey(postPicksMatch[1]);
-    const { dep, arr, seat, fa_flight_id: faId } = JSON.parse(event.body || '{}');
+    const { dep, arr, seat, fa_flight_id: faId, scheduled_out_utc: schedUtc } = JSON.parse(event.body || '{}');
     if (!dep || !arr || !seat) return respond(400, H, { error: 'Need dep, arr, seat' });
     const existing = await getEntries(code, date, faId || null);
     const taken    = existing.find(e => e.dep_time === dep && e.arr_time === arr);
     if (taken) return respond(409, H, { error: 'combo_taken', takenBy: taken.seat });
     const r = await insertEntry({
-      flight_code:  code,
-      flight_date:  date || '',
-      fa_flight_id: faId || '',
+      flight_code:       code,
+      flight_date:       date || '',
+      fa_flight_id:      faId || '',
+      scheduled_out_utc: schedUtc || '',
       seat, dep_time: dep, arr_time: arr,
       mobile: '', boarding_pass: null,
       created_at: new Date().toISOString()

@@ -154,7 +154,7 @@ async function pollAllActiveFlights() {
 
   // 1. Get all entries — just code+date+fa_flight_id
   const entriesRes = await sbRequest('GET',
-    'entries?order=created_at.asc&select=flight_code,flight_date,fa_flight_id'
+    'entries?order=created_at.asc&select=flight_code,flight_date,fa_flight_id,scheduled_out_utc'
   );
   const allEntries = Array.isArray(entriesRes.data) ? entriesRes.data : [];
   if (!allEntries.length) { console.log('[poller] No entries'); return; }
@@ -172,16 +172,17 @@ async function pollAllActiveFlights() {
     const key = `${e.flight_code}_${e.flight_date || ''}`;
     if (!toCheck.has(key)) {
       toCheck.set(key, {
-        code:  e.flight_code,
-        date:  e.flight_date || '',
-        faId:  e.fa_flight_id || ''
+        code:     e.flight_code,
+        date:     e.flight_date || '',
+        faId:     e.fa_flight_id || '',
+        schedUtc: e.scheduled_out_utc || ''
       });
     }
   });
 
   console.log(`[poller] ${toCheck.size} flights to check, ${wonSet.size} already decided`);
 
-  for (const [key, { code, date, faId }] of toCheck) {
+  for (const [key, { code, date, faId, schedUtc }] of toCheck) {
     // Skip if already decided
     if (wonSet.has(key)) { console.log(`[poller] Skip ${key} — decided`); continue; }
 
@@ -221,8 +222,13 @@ async function pollAllActiveFlights() {
         }
         const d = JSON.parse(fa.body);
         const flights = d.flights || [];
-        // Try to match by fa_flight_id first, then by departure date
+        // Match priority:
+        // 1. Exact fa_flight_id match
+        // 2. scheduled_out_utc match (most reliable for multi-leg same-day flights)
+        // 3. Date match fallback
+        // 4. Only flight if single result
         fl = flights.find(f => faId && f.fa_flight_id === faId)
+          || (schedUtc ? flights.find(f => (f.scheduled_out || f.scheduled_off || '') === schedUtc) : null)
           || flights.find(f => {
                const depIso = f.scheduled_out || f.scheduled_off || f.actual_out || f.actual_off;
                if (!depIso) return false;

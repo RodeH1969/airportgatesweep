@@ -1515,15 +1515,16 @@
       const arr = data.scheduled_arr || data.estimated_arr || '--:--';
 
       const flight = {
-        code:        q,
-        key:         data.flight_key || q,   // "QF559_2026-03-30"
-        date:        data.flight_date || '',
-        fa_flight_id: data.fa_flight_id || '',
-        from:        data.from,
-        to:          data.to,
+        code:              q,
+        key:               data.flight_key || q,
+        date:              data.flight_date || '',
+        fa_flight_id:      data.fa_flight_id || '',
+        scheduled_out_utc: data.scheduled_out_utc || '',
+        from:              data.from,
+        to:                data.to,
         dep,
         arr,
-        state:       data.state
+        state:             data.state
       };
       showGame(flight);
 
@@ -1755,7 +1756,7 @@
       const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dep: myDep, arr: myArr, seat, fa_flight_id: currentFlight.fa_flight_id || '' })
+        body: JSON.stringify({ dep: myDep, arr: myArr, seat, fa_flight_id: currentFlight.fa_flight_id || '', scheduled_out_utc: currentFlight.scheduled_out_utc || '' })
       });
       if (r.status === 409) {
         const data = await r.json();
