@@ -35,8 +35,6 @@
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 10px 24px; border-radius: 8px; font-weight: 700; display: none; z-index: 999; font-size: 0.9rem; max-width: 90vw; text-align: center; }
     .toast.show { display: block; }
     .toast.error { background: #ef4444; }
-    .auth-screen { max-width: 340px; margin: 80px auto; }
-    .auth-screen input { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #e2e8f0; font-size: 1rem; margin-bottom: 12px; outline: none; }
     .fa-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
     .fa-status.scheduled { background: #1e3a5f; color: #60a5fa; }
     .fa-status.departed  { background: #1a2e1a; color: #4ade80; }
@@ -85,17 +83,8 @@
 </head>
 <body>
 
-<!-- ── Auth screen ── -->
-<div id="auth-screen" class="auth-screen card">
-  <h1>🔐 AGS Admin</h1>
-  <p style="color:#64748b;font-size:0.8rem;margin-bottom:16px;">Enter admin key</p>
-  <input type="password" id="key-input" placeholder="Admin key" onkeydown="if(event.key==='Enter')login()">
-  <button class="btn" style="width:100%" onclick="login()">Login</button>
-  <div id="auth-error" style="color:#ef4444;font-size:0.8rem;margin-top:8px;display:none;">Invalid key</div>
-</div>
-
 <!-- ── Main panel ── -->
-<div id="main" style="display:none;max-width:980px;margin:0 auto;">
+<div id="main" style="max-width:980px;margin:0 auto;">
   <h1>✈️ Airport Gate Sweep — Admin</h1>
   <div class="sub">Supabase persistent storage · Auto-scores on arrival</div>
 
@@ -146,7 +135,7 @@
 <div id="toast" class="toast"></div>
 
 <script>
-  let adminKey   = '';
+  const adminKey = 'AGS2026admin';
   let allData    = {};  // { flightKey: [entries] }
   let allWinners = {};  // { flightKey: winnerObj }
   const BASE     = '/.netlify/functions/api';
@@ -161,21 +150,6 @@
     if (tab === 'progress' && Object.keys(allData).length) renderAll(allData);
   }
 
-  // ── Auth ─────────────────────────────────────────────────────
-  function login() {
-    const k = document.getElementById('key-input').value.trim();
-    fetch(`${BASE}/admin?key=${encodeURIComponent(k)}`)
-      .then(r => { if (r.status === 403) throw new Error('forbidden'); return r.json(); })
-      .then(data => {
-        adminKey   = k;
-        allData    = data.flights || {};
-        allWinners = data.winners || {};
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('main').style.display = 'block';
-        renderAll(allData);
-      })
-      .catch(() => { document.getElementById('auth-error').style.display = 'block'; });
-  }
 
   // ── Load helpers ──────────────────────────────────────────────
   function loadAll() {
@@ -566,6 +540,8 @@
     t.className = 'toast show' + (isError ? ' error' : '');
     setTimeout(() => t.classList.remove('show'), 4000);
   }
+  // Auto-load on page open
+  loadAll();
 </script>
 </body>
 </html>
