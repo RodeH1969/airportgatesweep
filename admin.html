@@ -27,7 +27,6 @@
     .field { display: flex; flex-direction: column; gap: 4px; }
     .field label { font-size: 0.62rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
     .actual-input { background: #1e293b; border: 2px solid #334155; border-radius: 6px; padding: 8px 12px; color: #f59e0b; font-size: 1rem; font-weight: 900; width: 100px; outline: none; }
-    .actual-input.locked { border-color: #10b981; color: #10b981; }
     .stats-row { display: flex; gap: 24px; flex-wrap: wrap; }
     .stat { text-align: center; }
     .stat-val { font-size: 1.3rem; font-weight: 900; color: #f59e0b; }
@@ -286,20 +285,15 @@
           <div class="actual-fields">
             <div class="field">
               <label>Actual Gate Dep</label>
-              <input class="actual-input ${lockedDep?'locked':''}" id="actual-dep-${key}" placeholder="--:--" value="${lockedDep}" oninput="onActualInput('${key}')">
+              <input class="actual-input" id="actual-dep-${key}" placeholder="--:--" value="${lockedDep}" oninput="onActualInput('${key}')">
             </div>
             <div class="field">
               <label>Actual Gate Arr</label>
-              <input class="actual-input ${lockedArr?'locked':''}" id="actual-arr-${key}" placeholder="--:--" value="${lockedArr}" oninput="onActualInput('${key}')">
+              <input class="actual-input" id="actual-arr-${key}" placeholder="--:--" value="${lockedArr}" oninput="onActualInput('${key}')">
             </div>
             <button class="btn green" onclick="refreshFA('${key}')">🔄 Refresh FlightAware</button>
             <button class="btn gold"  onclick="manualLock('${key}')">🔒 Lock & Award</button>
             <button class="btn red"   onclick="cancelFlight('${key}')">❌ Cancel Flight</button>
-          </div>
-          <div id="lock-status-${key}" style="margin-top:8px;font-size:0.75rem;color:${lockedDep?'#10b981':'#64748b'};">
-            ${lockedDep
-              ? `✅ Dep: ${lockedDep}${lockedArr ? ` · Arr: ${lockedArr} — locked permanently` : ' · Arr still pending'}`
-              : 'Not locked — Refresh FlightAware or enter times manually then hit Lock & Award'}
           </div>
         </div>
 
@@ -339,8 +333,6 @@
   // ── Manual input handler ──────────────────────────────────────
   function onActualInput(key) {
     const dep = document.getElementById(`actual-dep-${key}`)?.value || '';
-    const ls  = document.getElementById(`lock-status-${key}`);
-    if (ls) ls.textContent = dep ? 'Ready to lock — hit 🔒 Lock & Award when correct' : 'Enter times then hit Lock & Award';
   }
 
   // ── Refresh from FlightAware ──────────────────────────────────
@@ -358,8 +350,8 @@
     if (!hasDep) { showToast(`Status: ${fd.state} — no actuals from FlightAware yet`); return; }
     const depEl = document.getElementById(`actual-dep-${key}`);
     const arrEl = document.getElementById(`actual-arr-${key}`);
-    if (depEl) { depEl.value = fd.actual_dep; depEl.classList.add('locked'); }
-    if (hasArr && arrEl) { arrEl.value = fd.actual_arr; arrEl.classList.add('locked'); }
+    if (depEl) { depEl.value = fd.actual_dep; }
+    if (hasArr && arrEl) { arrEl.value = fd.actual_arr; }
     await lockActuals(key, fd.actual_dep, hasArr ? fd.actual_arr : null);
   }
 
@@ -373,8 +365,6 @@
 
   // ── Core lock — saves to Supabase & auto-awards winner ────────
   async function lockActuals(key, dep, arr) {
-    const ls = document.getElementById(`lock-status-${key}`);
-    if (ls) ls.textContent = 'Saving to database…';
     try {
       const r = await fetch(`${BASE}/admin/lock`, {
         method: 'POST',
@@ -386,8 +376,8 @@
 
       const depEl = document.getElementById(`actual-dep-${key}`);
       const arrEl = document.getElementById(`actual-arr-${key}`);
-      if (depEl && dep) { depEl.value = dep; depEl.classList.add('locked'); }
-      if (arrEl && arr) { arrEl.value = arr; arrEl.classList.add('locked'); }
+      if (depEl && dep) { depEl.value = dep; }
+      if (arrEl && arr) { arrEl.value = arr; }
 
       if (d.winner) {
         // Rebuild the card so winner banner appears immediately
@@ -402,14 +392,11 @@
               cardEl.replaceWith(div.firstElementChild);
             });
         }
-        if (ls) { ls.style.color = '#f59e0b'; ls.textContent = `✅ Locked — 🏆 Winner auto-awarded: Seat ${d.winner}`; }
         showToast(`🏆 Winner: Seat ${d.winner} — players can see results now`);
       } else if (arr) {
-        if (ls) { ls.style.color = '#10b981'; ls.textContent = `✅ Dep: ${dep} · Arr: ${arr} — locked permanently`; }
-        showToast(`Locked: dep ${dep} · arr ${arr}`);
+        showToast(`Times saved: dep ${dep} · arr ${arr}`);
       } else {
-        if (ls) { ls.style.color = '#10b981'; ls.textContent = `✅ Dep locked: ${dep} · Waiting for arrival time`; }
-        showToast(`Dep locked: ${dep} — refresh again after landing`);
+        showToast(`Departure saved: ${dep}`);
       }
     } catch(e) { showToast('Network error saving actuals', true); }
   }
