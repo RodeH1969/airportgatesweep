@@ -105,23 +105,28 @@ function scoreEntries(entries, actualDep, actualArr) {
 }
 
 async function maybeAwardWinner(code, date, faId, depTime, arrTime) {
-  // Check not already awarded for this specific leg
-  const filter = faId
-    ? `fa_flight_id=eq.${encodeURIComponent(faId)}`
-    : `flight_code=eq.${encodeURIComponent(code)}&flight_date=eq.${encodeURIComponent(date)}`;
+  const codeFilter = `flight_code=eq.${encodeURIComponent(code)}&flight_date=eq.${encodeURIComponent(date)}`;
+  const faFilter   = faId ? `fa_flight_id=eq.${encodeURIComponent(faId)}` : null;
 
-  const existing = await sbRequest('GET', `winners?${filter}`);
-  if (Array.isArray(existing.data) && existing.data.length) {
-    console.log(`[poller] Winner already awarded for ${code} [${faId}]`);
+  // Check not already awarded
+  const existingW = await sbRequest('GET', `winners?${codeFilter}`);
+  if (Array.isArray(existingW.data) && existingW.data.length) {
+    console.log(`[poller] Winner already awarded for ${code}_${date}`);
     return;
   }
 
-  // Get entries for this specific leg
-  const entriesRes = await sbRequest('GET',
-    `entries?${filter}&order=created_at.asc&select=id,flight_code,flight_date,fa_flight_id,seat,dep_time,arr_time,mobile,created_at`
-  );
-  const entries = Array.isArray(entriesRes.data) ? entriesRes.data : [];
-  if (!entries.length) { console.log(`[poller] No entries for ${code} [${faId}]`); return; }
+  // Get entries — try fa_flight_id first, fall back to code+date (handles legacy entries)
+  let entries = [];
+  if (faFilter) {
+    const r = await sbRequest('GET', `entries?${faFilter}&order=created_at.asc&select=id,flight_code,flight_date,fa_flight_id,seat,dep_time,arr_time,mobile,created_at`);
+    entries = Array.isArray(r.data) ? r.data : [];
+  }
+  if (!entries.length) {
+    // Fall back to code+date — covers entries made before fa_flight_id was stored
+    const r = await sbRequest('GET', `entries?${codeFilter}&order=created_at.asc&select=id,flight_code,flight_date,fa_flight_id,seat,dep_time,arr_time,mobile,created_at`);
+    entries = Array.isArray(r.data) ? r.data : [];
+  }
+  if (!entries.length) { console.log(`[poller] No entries for ${code}_${date}`); return; }
 
   const scored = scoreEntries(entries, depTime, arrTime);
   const winner = scored[0];
@@ -178,9 +183,8 @@ async function pollAllActiveFlights() {
 
     try {
       // Check existing actuals
-      const actFilter = faId
-        ? `fa_flight_id=eq.${encodeURIComponent(faId)}`
-        : `flight_code=eq.${encodeURIComponent(code)}&flight_date=eq.${encodeURIComponent(date)}`;
+      // Always look up actuals by code+date (most reliable, covers legacy entries too)
+      const actFilter = `flight_code=eq.${encodeURIComponent(code)}&flight_date=eq.${encodeURIComponent(date)}`;
       const actRes  = await sbRequest('GET', `actuals?${actFilter}`);
       const existing = Array.isArray(actRes.data) && actRes.data.length ? actRes.data[0] : null;
 
