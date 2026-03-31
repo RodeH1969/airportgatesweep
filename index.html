@@ -1996,7 +1996,13 @@
           actualDep: w.actualDep,
           actualArr: w.actualArr,
           allScores: w.allScores || [],
-          publishedAt: w.publishedAt
+          publishedAt: w.publishedAt,
+          routeFrom: w.routeFrom || '',
+          routeTo: w.routeTo || '',
+          routeFromCity: w.routeFromCity || '',
+          routeToCity: w.routeToCity || '',
+          scheduledDep: w.scheduledDep || '',
+          scheduledArr: w.scheduledArr || ''
         }));
       renderResultsDates(winners);
     } catch(e) {
@@ -2085,8 +2091,22 @@
         <div style="background:#fff;border:1.5px solid #c8dff5;border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:0 2px 12px rgba(37,99,235,0.08);">
 
           <!-- Flight header -->
-          <div style="background:#1e3a5f;padding:12px 16px;text-align:center;">
+          <div style="background:#1e3a5f;padding:14px 16px;text-align:center;">
             <div style="font-family:Nunito,sans-serif;font-weight:900;color:#f59e0b;font-size:1.1rem;">✈️ ${w.flightCode}</div>
+            ${w.routeFrom ? `
+            <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+              <div style="text-align:center;">
+                <div style="font-family:Nunito,sans-serif;font-weight:900;color:#fff;font-size:1.3rem;">${w.routeFrom}</div>
+                <div style="font-size:0.65rem;color:#93c5fd;font-weight:700;">${w.routeFromCity||''}</div>
+              </div>
+              <div style="color:#60a5fa;font-size:1.2rem;">→</div>
+              <div style="text-align:center;">
+                <div style="font-family:Nunito,sans-serif;font-weight:900;color:#fff;font-size:1.3rem;">${w.routeTo}</div>
+                <div style="font-size:0.65rem;color:#93c5fd;font-weight:700;">${w.routeToCity||''}</div>
+              </div>
+            </div>
+            ${w.scheduledDep ? `<div style="font-size:0.65rem;color:#64748b;margin-top:6px;">Scheduled ${w.scheduledDep} → ${w.scheduledArr}</div>` : ''}
+            ` : ''}
           </div>
 
           <!-- Actual times — BIG and bold -->

@@ -103,7 +103,7 @@ function scoreEntries(entries, actualDep, actualArr) {
 }
 
 // Award winner for a flight — always uses code+date as canonical key
-async function maybeAwardWinner(code, date, faId, depTime, arrTime) {
+async function maybeAwardWinner(code, date, faId, depTime, arrTime, routeFrom, routeTo, routeFromCity, routeToCity, schedDep, schedArr) {
   const byCode = `flight_code=eq.${encodeURIComponent(code)}&flight_date=eq.${encodeURIComponent(date)}`;
 
   // Check not already awarded
@@ -136,9 +136,15 @@ async function maybeAwardWinner(code, date, faId, depTime, arrTime) {
     actual_dep:   depTime,
     actual_arr:   arrTime,
     all_scores:   JSON.stringify(scored.map(({ boarding_pass, ...s }) => s)),
-    published_at: new Date().toISOString(),
-    auto_awarded: true,
-    cancelled:    false
+    published_at:  new Date().toISOString(),
+    auto_awarded:  true,
+    cancelled:     false,
+    route_from:    routeFrom    || '',
+    route_to:      routeTo      || '',
+    route_from_city: routeFromCity || '',
+    route_to_city:   routeToCity   || '',
+    scheduled_dep: schedDep    || '',
+    scheduled_arr: schedArr    || ''
   });
   console.log(`[poller] *** WINNER: ${code}_${date} → Seat ${winner.seat} score ${winner.score}m ***`);
 }
@@ -259,7 +265,13 @@ async function pollAllActiveFlights() {
 
       // Award winner if both times known
       if (depToSave && arrToSave) {
-        await maybeAwardWinner(code, date, useFaId, depToSave, arrToSave);
+        const routeFrom = fl.origin?.code_iata || fl.origin?.code || '';
+        const routeTo   = fl.destination?.code_iata || fl.destination?.code || '';
+        const routeFromCity = fl.origin?.city || '';
+        const routeToCity   = fl.destination?.city || '';
+        const schedDep  = toLocalTime(fl.scheduled_out || fl.scheduled_off, depTz) || '';
+        const schedArr  = toLocalTime(fl.scheduled_in  || fl.scheduled_on,  arrTz) || '';
+        await maybeAwardWinner(code, date, useFaId, depToSave, arrToSave, routeFrom, routeTo, routeFromCity, routeToCity, schedDep, schedArr);
       }
 
     } catch(e) {

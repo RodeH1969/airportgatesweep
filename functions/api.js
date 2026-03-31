@@ -501,7 +501,13 @@ exports.handler = async (event) => {
         allScores:   JSON.parse(w.all_scores || '[]'),
         publishedAt: w.published_at,
         flightDate:  w.flight_date,
-        faFlightId:  w.fa_flight_id || ''
+        faFlightId:  w.fa_flight_id || '',
+        routeFrom:   w.route_from || '',
+        routeTo:     w.route_to || '',
+        routeFromCity: w.route_from_city || '',
+        routeToCity:   w.route_to_city || '',
+        scheduledDep:  w.scheduled_dep || '',
+        scheduledArr:  w.scheduled_arr || ''
       };
     });
     return respond(200, H, { flights, winners });
