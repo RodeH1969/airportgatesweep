@@ -1,5 +1,0 @@
-[33m2304e39[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m admin redesign - 3 tabs, prominent winner banner, clean winners section
-[33m3336dda[m fix mobile boarding pass upload - allow gallery selection
-[33me4240cb[m complete admin rewrite - reliable locking, auto-award, cancel
-[33mebd7ef8[m add flight cancellation - admin button and cancelled screen
-[33mc93a192[m update logo image
