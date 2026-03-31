@@ -2075,26 +2075,46 @@
 
       return `
         <div style="background:#fff;border:1.5px solid #c8dff5;border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:0 2px 12px rgba(37,99,235,0.08);">
+
           <!-- Flight header -->
-          <div style="background:#1e3a5f;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-family:Nunito,sans-serif;font-weight:900;color:#f59e0b;font-size:1rem;">✈️ ${w.flightCode}</div>
-            <div style="font-size:0.7rem;color:#93c5fd;">Actual: ${w.actualDep||'—'} → ${w.actualArr||'—'}</div>
+          <div style="background:#1e3a5f;padding:12px 16px;text-align:center;">
+            <div style="font-family:Nunito,sans-serif;font-weight:900;color:#f59e0b;font-size:1.1rem;">✈️ ${w.flightCode}</div>
           </div>
+
+          <!-- Actual times — BIG and bold -->
+          <div style="background:#0f172a;padding:14px 16px;">
+            <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#64748b;text-align:center;margin-bottom:10px;">Actual Gate Times</div>
+            <div style="display:flex;justify-content:space-around;align-items:center;gap:8px;">
+              <div style="text-align:center;">
+                <div style="font-size:2rem;line-height:1;">🛫</div>
+                <div style="font-size:0.6rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Departed</div>
+                <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.8rem;color:#10b981;line-height:1.1;">${w.actualDep||'—'}</div>
+              </div>
+              <div style="font-size:1.5rem;color:#334155;">→</div>
+              <div style="text-align:center;">
+                <div style="font-size:2rem;line-height:1;">🛬</div>
+                <div style="font-size:0.6rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Arrived</div>
+                <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.8rem;color:#10b981;line-height:1.1;">${w.actualArr||'—'}</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Winner hero -->
           <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);padding:16px;text-align:center;border-bottom:1.5px solid #fde68a;">
             <div style="font-size:2rem;margin-bottom:4px;">🏆</div>
             <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#92400e;">Winner</div>
-            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:2rem;color:#b45309;line-height:1.1;">${winner.seat||'—'}</div>
+            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:2.2rem;color:#b45309;line-height:1.1;">${winner.seat||'—'}</div>
             <div style="font-size:0.78rem;color:#92400e;margin-top:4px;">${winner.score}m total off actual times</div>
           </div>
+
           <!-- Scoreboard -->
           <div style="padding:0;">
             <table style="width:100%;border-collapse:collapse;font-size:0.78rem;color:#1e3a5f;">
               <thead><tr style="background:#f0f7ff;">
                 <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">#</th>
                 <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">Seat</th>
-                <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">Dep</th>
-                <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">Arr</th>
+                <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">Dep Pick</th>
+                <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">Arr Pick</th>
                 <th style="padding:6px 10px;text-align:left;font-size:0.6rem;color:#64a0c8;text-transform:uppercase;">Score</th>
               </tr></thead>
               <tbody>${rows}</tbody>
