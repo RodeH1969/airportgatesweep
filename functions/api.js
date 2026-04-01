@@ -145,29 +145,49 @@ async function upsertWinner(code, date, winnerData, faId) {
   });
 }
 
-// Auto-award winner when both actuals are available
+// Auto-award winner — exact match only (depDiff===0 AND arrDiff===0)
 async function maybeAwardWinner(code, date, depTime, arrTime, faId) {
   const alreadyWon = await getWinner(code, date, faId);
   if (alreadyWon) return alreadyWon;
   const entries = await getEntries(code, date, faId);
   if (!entries.length) return null;
   const scored = scoreEntries(entries, depTime, arrTime);
-  const winner = scored[0];
-  if (winner.score === null) return null;
-  await upsertWinner(code, date, {
-    winner_seat:  winner.seat,
-    winner_dep:   winner.dep_time,
-    winner_arr:   winner.arr_time,
-    winner_score: winner.score,
-    actual_dep:   depTime,
-    actual_arr:   arrTime,
-    all_scores:   JSON.stringify(scored.map(({ boarding_pass, ...s }) => s)),
-    published_at: new Date().toISOString(),
-    auto_awarded: true,
-    cancelled:    false
-  }, faId);
-  console.log(`Winner awarded ${code} ${date} [${faId}]: Seat ${winner.seat} score ${winner.score}`);
-  return winner;
+
+  // Find exact match — both dep and arr must be exactly right
+  const exactWinner = scored.find(e => e.depDiff === 0 && e.arrDiff === 0);
+
+  if (exactWinner) {
+    await upsertWinner(code, date, {
+      winner_seat:  exactWinner.seat,
+      winner_dep:   exactWinner.dep_time,
+      winner_arr:   exactWinner.arr_time,
+      winner_score: 0,
+      actual_dep:   depTime,
+      actual_arr:   arrTime,
+      all_scores:   JSON.stringify(scored.map(({ boarding_pass, ...s }) => s)),
+      published_at: new Date().toISOString(),
+      auto_awarded: true,
+      cancelled:    false
+    }, faId);
+    console.log(`Exact winner: ${code} ${date} [${faId}]: Seat ${exactWinner.seat}`);
+    return exactWinner;
+  } else {
+    // No exact match — record no winner
+    await upsertWinner(code, date, {
+      winner_seat:  'NO_WINNER',
+      winner_dep:   null,
+      winner_arr:   null,
+      winner_score: null,
+      actual_dep:   depTime,
+      actual_arr:   arrTime,
+      all_scores:   JSON.stringify(scored.map(({ boarding_pass, ...s }) => s)),
+      published_at: new Date().toISOString(),
+      auto_awarded: true,
+      cancelled:    false
+    }, faId);
+    console.log(`No exact winner for ${code} ${date}`);
+    return null;
+  }
 }
 
 // ── FlightAware ──────────────────────────────────────────────────
@@ -248,7 +268,7 @@ function flightStatus(fl) {
     fa_flight_id:  fl.fa_flight_id || '',
     flight_date:   toLocalDate(depIso, depTz),
     actual_dep:    toLocalTime(fl.actual_out || fl.actual_off, depTz),
-    actual_arr:    toLocalTime(fl.actual_in  || fl.actual_on,  arrTz),
+    actual_arr:    toLocalTime(fl.actual_in, arrTz),  // gate arrival only, matches FA website
     scheduled_dep: toLocalTime(fl.scheduled_out || fl.scheduled_off, depTz),
     scheduled_arr: toLocalTime(fl.scheduled_in  || fl.scheduled_on,  arrTz),
     estimated_dep: toLocalTime(fl.estimated_out || fl.estimated_off, depTz),
@@ -314,9 +334,19 @@ function scoreEntries(entries, actualDep, actualArr) {
 function winnerResponse(w) {
   if (!w) return { announced: false };
   if (w.winner_seat === 'CANCELLED' || w.cancelled) return { announced: true, cancelled: true };
+  if (w.winner_seat === 'NO_WINNER') return {
+    announced: true,
+    cancelled: false,
+    noWinner:  true,
+    actualDep: w.actual_dep,
+    actualArr: w.actual_arr,
+    allScores: JSON.parse(w.all_scores || '[]'),
+    publishedAt: w.published_at
+  };
   return {
     announced: true,
     cancelled: false,
+    noWinner:  false,
     winner: {
       winner:    { seat: w.winner_seat, dep: w.winner_dep, arr: w.winner_arr, score: w.winner_score },
       actualDep: w.actual_dep,

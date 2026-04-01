@@ -790,7 +790,7 @@
     <div class="tagline-banner">Pushback. Touchdown. Payoff.</div>
     <div class="badges">
       <div class="badge badge-navy" style="cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="showRulesPopup()">
-        LOWEST SCORE WINS
+        EXACT TIME WINS
         <span style="background:#f59e0b;color:#1e3a5f;border-radius:50%;width:16px;height:16px;font-size:0.65rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">?</span>
       </div>
       <div class="badge badge-green">FREE TO PLAY</div>
@@ -851,7 +851,7 @@
     <div class="tagline-banner">Pushback. Touchdown. Payoff.</div>
     <div class="badges">
       <div class="badge badge-navy" style="cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="showRulesPopup()">
-        LOWEST SCORE WINS
+        EXACT TIME WINS
         <span style="background:#f59e0b;color:#1e3a5f;border-radius:50%;width:16px;height:16px;font-size:0.65rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">?</span>
       </div>
       <div class="badge badge-green">FREE TO PLAY</div>
@@ -968,7 +968,7 @@
     <div class="tagline-banner">Pushback. Touchdown. Payoff.</div>
     <div class="badges">
       <div class="badge badge-navy" style="cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="showRulesPopup()">
-        LOWEST SCORE WINS
+        EXACT TIME WINS
         <span style="background:#f59e0b;color:#1e3a5f;border-radius:50%;width:16px;height:16px;font-size:0.65rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">?</span>
       </div>
       <div class="badge badge-green">FREE TO PLAY</div>
@@ -1072,7 +1072,7 @@
     <div class="tagline-banner">Pushback. Touchdown. Payoff.</div>
     <div class="badges">
       <div class="badge badge-navy" style="cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="showRulesPopup()">
-        LOWEST SCORE WINS
+        EXACT TIME WINS
         <span style="background:#f59e0b;color:#1e3a5f;border-radius:50%;width:16px;height:16px;font-size:0.65rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">?</span>
       </div>
       <div class="badge badge-green">FREE TO PLAY</div>
@@ -2001,7 +2001,7 @@
       // Convert winners object to array, filter only confirmed winners
       const winnersObj = data.winners || {};
       const winners = Object.entries(winnersObj)
-        .filter(([, w]) => !w.cancelled && w.winner && w.winner.seat)
+        .filter(([, w]) => !w.cancelled && w.winner)
         .map(([key, w]) => ({
           flightCode: key.split('_')[0],
           flightDate: w.flightDate || key.split('_')[1] || '',
@@ -2078,6 +2078,19 @@
         return `<div style="background:#fff;border:1.5px solid #fecaca;border-radius:14px;padding:16px;margin-bottom:12px;text-align:center;">
           <div style="font-family:Nunito,sans-serif;font-weight:900;color:#ef4444;">✈️ ${w.flightCode}</div>
           <div style="font-size:0.8rem;color:#ef4444;margin-top:4px;">❌ Flight Cancelled — No winner</div>
+        </div>`;
+      }
+      if (w.winner && w.winner.seat === 'NO_WINNER') {
+        return `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;overflow:hidden;margin-bottom:16px;">
+          <div style="background:#1e3a5f;padding:12px 16px;text-align:center;">
+            <div style="font-family:Nunito,sans-serif;font-weight:900;color:#f59e0b;font-size:1rem;">✈️ ${w.flightCode}</div>
+          </div>
+          <div style="padding:20px;text-align:center;">
+            <div style="font-size:2rem;margin-bottom:8px;">🎯</div>
+            <div style="font-family:Nunito,sans-serif;font-weight:900;color:#1e3a5f;font-size:1.1rem;">No Exact Match</div>
+            <div style="font-size:0.85rem;color:#64748b;margin-top:6px;">Nobody guessed the exact times — no winner this flight</div>
+            <div style="font-size:0.78rem;color:#10b981;margin-top:8px;font-weight:700;">Actual: ${w.actualDep||'—'} dep · ${w.actualArr||'—'} arr</div>
+          </div>
         </div>`;
       }
 
@@ -2237,7 +2250,7 @@
         </div>
         <div style="display:flex;align-items:flex-start;gap:12px;">
           <span style="font-size:1.4rem;flex-shrink:0;">🏆</span>
-          <div style="font-family:Nunito Sans,sans-serif;color:#1e3a5f;font-size:0.9rem;"><strong>Closest total minutes off</strong> actual times wins</div>
+          <div style="font-family:Nunito Sans,sans-serif;color:#1e3a5f;font-size:0.9rem;">You must guess the <strong>exact</strong> departure AND arrival time to win</div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:12px;">
           <span style="font-size:1.4rem;flex-shrink:0;">📋</span>

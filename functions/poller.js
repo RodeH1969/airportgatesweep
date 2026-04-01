@@ -121,18 +121,23 @@ async function maybeAwardWinner(code, date, faId, depTime, arrTime, routeFrom, r
   if (!entries.length) { console.log(`[poller] No entries for ${code}_${date}`); return; }
 
   const scored = scoreEntries(entries, depTime, arrTime);
-  const winner = scored[0];
-  if (winner.score === null) { console.log(`[poller] Cannot score yet for ${code}_${date}`); return; }
+  if (!scored.length || scored[0].score === null) {
+    console.log(`[poller] Cannot score yet for ${code}_${date}`);
+    return;
+  }
+
+  // Exact match only — dep AND arr must be exactly right
+  const exactWinner = scored.find(e => e.depDiff === 0 && e.arrDiff === 0);
 
   await sbRequest('DELETE', `winners?${byCode}`, null);
   await sbRequest('POST', 'winners', {
     flight_code:  code,
     flight_date:  date,
     fa_flight_id: faId || '',
-    winner_seat:  winner.seat,
-    winner_dep:   winner.dep_time,
-    winner_arr:   winner.arr_time,
-    winner_score: winner.score,
+    winner_seat:  exactWinner ? exactWinner.seat : 'NO_WINNER',
+    winner_dep:   exactWinner ? exactWinner.dep_time : null,
+    winner_arr:   exactWinner ? exactWinner.arr_time : null,
+    winner_score: exactWinner ? 0 : null,
     actual_dep:   depTime,
     actual_arr:   arrTime,
     all_scores:   JSON.stringify(scored.map(({ boarding_pass, ...s }) => s)),
@@ -146,7 +151,11 @@ async function maybeAwardWinner(code, date, faId, depTime, arrTime, routeFrom, r
     scheduled_dep: schedDep    || '',
     scheduled_arr: schedArr    || ''
   });
-  console.log(`[poller] *** WINNER: ${code}_${date} → Seat ${winner.seat} score ${winner.score}m ***`);
+  if (exactWinner) {
+    console.log(`[poller] *** EXACT WINNER: ${code}_${date} → Seat ${exactWinner.seat} ***`);
+  } else {
+    console.log(`[poller] No exact winner for ${code}_${date}`);
+  }
 }
 
 async function pollAllActiveFlights() {
@@ -243,7 +252,9 @@ async function pollAllActiveFlights() {
       const depTz   = tzOffset(fl.origin?.timezone      || 'Australia/Brisbane');
       const arrTz   = tzOffset(fl.destination?.timezone  || 'Australia/Brisbane');
       const gotDep  = toLocalTime(fl.actual_out || fl.actual_off, depTz);
-      const gotArr  = toLocalTime(fl.actual_in  || fl.actual_on,  arrTz);
+      // Only use actual_in (gate arrival) — never actual_on (wheels down)
+      // This matches what FlightAware website displays
+      const gotArr  = toLocalTime(fl.actual_in, arrTz);
       const useFaId = fl.fa_flight_id || faId;
 
       // Never overwrite a locked value with null
