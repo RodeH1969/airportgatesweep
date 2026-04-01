@@ -183,17 +183,20 @@
 
   // ── Render In-Progress tab ────────────────────────────────────
   function renderAll(flights) {
-    const keys = Object.keys(flights);
-    document.getElementById('stats-row').style.display = keys.length ? 'block' : 'none';
-    const totalEntries = keys.reduce((n, k) => n + (flights[k]?.length || 0), 0);
+    // Exclude flights that already have a winner recorded
+    const decidedKeys = new Set(Object.keys(allWinners || {}));
+    const activeKeys = Object.keys(flights).filter(k => !decidedKeys.has(k));
+
+    document.getElementById('stats-row').style.display = activeKeys.length ? 'block' : 'none';
+    const totalEntries = activeKeys.reduce((n, k) => n + (flights[k]?.length || 0), 0);
     document.getElementById('stat-entries').textContent = totalEntries;
-    document.getElementById('stat-flights').textContent = keys.length;
+    document.getElementById('stat-flights').textContent = activeKeys.length;
     document.getElementById('stat-leader').textContent  = '—';
-    if (!keys.length) {
+    if (!activeKeys.length) {
       document.getElementById('results').innerHTML = '<div class="empty">No active flights yet</div>';
       return;
     }
-    document.getElementById('results').innerHTML = keys.map(key =>
+    document.getElementById('results').innerHTML = activeKeys.map(key =>
       buildFlightCard(key, flights[key] || [], null, null, null)
     ).join('');
   }
