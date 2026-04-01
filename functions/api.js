@@ -258,22 +258,43 @@ function flightStatus(fl) {
 
 function getBestFlight(flights) {
   const now = new Date();
+
+  // 1. Flight actively in progress (airborne)
   let fl = flights.find(f => (f.progress_percent || 0) > 0 && f.progress_percent < 100);
   if (fl) return fl;
-  const candidates = flights.filter(f => {
+
+  // 2. Next scheduled/upcoming flight within 24h (prefer future over past)
+  const upcoming = flights.filter(f => {
     const dep = f.scheduled_out || f.scheduled_off;
     if (!dep) return false;
     const diff = (new Date(dep).getTime() - now.getTime()) / 3600000;
-    return diff > -2 && diff < 24;
+    return diff > -0.5 && diff < 24; // only 30min grace for past departures
   });
-  if (candidates.length) {
-    candidates.sort((a, b) => {
+  if (upcoming.length) {
+    upcoming.sort((a, b) => {
       const at = new Date(a.scheduled_out || a.scheduled_off).getTime();
       const bt = new Date(b.scheduled_out || b.scheduled_off).getTime();
-      return Math.abs(at - now) - Math.abs(bt - now);
+      return at - bt; // pick earliest upcoming
     });
-    return candidates[0];
+    return upcoming[0];
   }
+
+  // 3. Most recently departed (within last 4h)
+  const recent = flights.filter(f => {
+    const dep = f.scheduled_out || f.scheduled_off;
+    if (!dep) return false;
+    const diff = (new Date(dep).getTime() - now.getTime()) / 3600000;
+    return diff > -4 && diff <= -0.5;
+  });
+  if (recent.length) {
+    recent.sort((a, b) => {
+      const at = new Date(a.scheduled_out || a.scheduled_off).getTime();
+      const bt = new Date(b.scheduled_out || b.scheduled_off).getTime();
+      return bt - at; // most recent first
+    });
+    return recent[0];
+  }
+
   return flights.find(f => f.status === 'Scheduled') || flights[0];
 }
 
