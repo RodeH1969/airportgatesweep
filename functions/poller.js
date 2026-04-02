@@ -1,5 +1,6 @@
-// Auto-poller: runs every 2 minutes via Netlify scheduled functions
-// Checks FlightAware for all active flights, locks times, awards winners automatically.
+// Auto-poller: runs every 2 minutes
+// Uses flight_code + route_from + route_to as unique key
+// ZL6852_SYD_DBO and ZL6852_DBO_BHQ are completely separate contests
 
 const https = require('https');
 
@@ -102,193 +103,164 @@ function scoreEntries(entries, actualDep, actualArr) {
   }).sort((a, b) => (a.score ?? 9999) - (b.score ?? 9999));
 }
 
-// Award winner for a flight — always uses code+date as canonical key
-async function maybeAwardWinner(code, date, faId, depTime, arrTime, routeFrom, routeTo, routeFromCity, routeToCity, schedDep, schedArr) {
-  const byCode = `flight_code=eq.${encodeURIComponent(code)}&flight_date=eq.${encodeURIComponent(date)}`;
+function routeFilter(code, from, to) {
+  return `flight_code=eq.${encodeURIComponent(code)}&route_from=eq.${encodeURIComponent(from)}&route_to=eq.${encodeURIComponent(to)}`;
+}
 
-  // Check not already awarded
-  const existingW = await sbRequest('GET', `winners?${byCode}`);
+async function maybeAwardWinner(code, from, to, date, depTime, arrTime, fromCity, toCity, schedDep, schedArr) {
+  const filter = routeFilter(code, from, to);
+
+  // Check already awarded
+  const existingW = await sbRequest('GET', `winners?${filter}`);
   if (Array.isArray(existingW.data) && existingW.data.length) {
-    console.log(`[poller] Winner already awarded for ${code}_${date}`);
+    console.log(`[poller] Winner already awarded for ${code}_${from}_${to}`);
     return;
   }
 
-  // Get entries by code+date (covers all entries regardless of fa_flight_id)
+  // Get entries
   const entriesRes = await sbRequest('GET',
-    `entries?${byCode}&order=created_at.asc&select=id,flight_code,flight_date,fa_flight_id,seat,dep_time,arr_time,mobile,created_at`
+    `entries?${filter}&order=created_at.asc&select=id,flight_code,flight_date,route_from,route_to,seat,dep_time,arr_time,mobile,created_at`
   );
   const entries = Array.isArray(entriesRes.data) ? entriesRes.data : [];
-  if (!entries.length) { console.log(`[poller] No entries for ${code}_${date}`); return; }
+  if (!entries.length) { console.log(`[poller] No entries for ${code}_${from}_${to}`); return; }
 
   const scored = scoreEntries(entries, depTime, arrTime);
-  if (!scored.length || scored[0].score === null) {
-    console.log(`[poller] Cannot score yet for ${code}_${date}`);
-    return;
-  }
+  if (!scored.length || scored[0].score === null) { console.log(`[poller] Cannot score yet`); return; }
 
-  // Exact match only — dep AND arr must be exactly right
   const exactWinner = scored.find(e => e.depDiff === 0 && e.arrDiff === 0);
 
-  await sbRequest('DELETE', `winners?${byCode}`, null);
+  await sbRequest('DELETE', `winners?${filter}`, null);
   await sbRequest('POST', 'winners', {
-    flight_code:  code,
-    flight_date:  date,
-    fa_flight_id: faId || '',
-    winner_seat:  exactWinner ? exactWinner.seat : 'NO_WINNER',
-    winner_dep:   exactWinner ? exactWinner.dep_time : null,
-    winner_arr:   exactWinner ? exactWinner.arr_time : null,
-    winner_score: exactWinner ? 0 : null,
-    actual_dep:   depTime,
-    actual_arr:   arrTime,
-    all_scores:   JSON.stringify(scored.map(({ boarding_pass, ...s }) => s)),
-    published_at:  new Date().toISOString(),
-    auto_awarded:  true,
-    cancelled:     false,
-    route_from:    routeFrom    || '',
-    route_to:      routeTo      || '',
-    route_from_city: routeFromCity || '',
-    route_to_city:   routeToCity   || '',
-    scheduled_dep: schedDep    || '',
-    scheduled_arr: schedArr    || ''
+    flight_code:     code,
+    flight_date:     date,
+    route_from:      from,
+    route_to:        to,
+    winner_seat:     exactWinner ? exactWinner.seat : 'NO_WINNER',
+    winner_dep:      exactWinner ? exactWinner.dep_time : null,
+    winner_arr:      exactWinner ? exactWinner.arr_time : null,
+    winner_score:    exactWinner ? 0 : null,
+    actual_dep:      depTime,
+    actual_arr:      arrTime,
+    all_scores:      JSON.stringify(scored.map(({ boarding_pass, ...s }) => s)),
+    published_at:    new Date().toISOString(),
+    auto_awarded:    true,
+    cancelled:       false,
+    route_from_city: fromCity || '',
+    route_to_city:   toCity   || '',
+    scheduled_dep:   schedDep || '',
+    scheduled_arr:   schedArr || '',
+    fa_flight_id:    ''
   });
+
   if (exactWinner) {
-    console.log(`[poller] *** EXACT WINNER: ${code}_${date} → Seat ${exactWinner.seat} ***`);
+    console.log(`[poller] *** EXACT WINNER: ${code} ${from}->${to} Seat ${exactWinner.seat} ***`);
   } else {
-    console.log(`[poller] No exact winner for ${code}_${date}`);
+    console.log(`[poller] No exact winner for ${code} ${from}->${to}`);
   }
 }
 
 async function pollAllActiveFlights() {
   console.log('[poller] Poll run at', new Date().toISOString());
 
-  // 1. Get all entries — just code+date+fa_flight_id
+  // 1. Get all entries — code + route_from + route_to
   const entriesRes = await sbRequest('GET',
-    'entries?order=created_at.asc&select=flight_code,flight_date,fa_flight_id,scheduled_out_utc'
+    'entries?order=created_at.asc&select=flight_code,flight_date,route_from,route_to'
   );
   const allEntries = Array.isArray(entriesRes.data) ? entriesRes.data : [];
   if (!allEntries.length) { console.log('[poller] No entries'); return; }
 
-  // 2. Get all decided flights — keyed by code_date (the ONE true canonical key)
-  const winnersRes = await sbRequest('GET', 'winners?select=flight_code,flight_date');
+  // 2. Get all decided — keyed by code_from_to
+  const winnersRes = await sbRequest('GET', 'winners?select=flight_code,route_from,route_to');
   const wonSet = new Set(
     (Array.isArray(winnersRes.data) ? winnersRes.data : [])
-      .map(w => `${w.flight_code}_${w.flight_date}`)
+      .map(w => `${w.flight_code}_${w.route_from}_${w.route_to}`)
   );
 
-  // 3. Build unique flights to poll — always keyed by code_date
+  // 3. Build unique flights
   const toCheck = new Map();
   allEntries.forEach(e => {
-    const key = `${e.flight_code}_${e.flight_date || ''}`;
+    const key = `${e.flight_code}_${e.route_from || ''}_${e.route_to || ''}`;
     if (!toCheck.has(key)) {
       toCheck.set(key, {
-        code:     e.flight_code,
-        date:     e.flight_date || '',
-        faId:     e.fa_flight_id || '',
-        schedUtc: e.scheduled_out_utc || ''
+        code: e.flight_code,
+        from: e.route_from || '',
+        to:   e.route_to   || '',
+        date: e.flight_date || ''
       });
     }
   });
 
   console.log(`[poller] ${toCheck.size} flights to check, ${wonSet.size} already decided`);
 
-  for (const [key, { code, date, faId, schedUtc }] of toCheck) {
-    // Skip if already decided
+  for (const [key, { code, from, to, date }] of toCheck) {
     if (wonSet.has(key)) { console.log(`[poller] Skip ${key} — decided`); continue; }
 
     try {
-      const byCode = `flight_code=eq.${encodeURIComponent(code)}&flight_date=eq.${encodeURIComponent(date)}`;
+      const filter = routeFilter(code, from, to);
 
-      // Get existing locked actuals
-      const actRes  = await sbRequest('GET', `actuals?${byCode}`);
+      // Check existing actuals
+      const actRes  = await sbRequest('GET', `actuals?${filter}`);
       const existing = Array.isArray(actRes.data) && actRes.data.length ? actRes.data[0] : null;
 
-      // If both times already locked → just make sure winner is awarded
+      // Both locked — check winner
       if (existing?.actual_dep && existing?.actual_arr) {
         console.log(`[poller] ${key}: both locked, checking winner`);
-        await maybeAwardWinner(code, date, faId, existing.actual_dep, existing.actual_arr);
+        await maybeAwardWinner(code, from, to, date, existing.actual_dep, existing.actual_arr, '', '', '', '');
         continue;
       }
 
-      // Query FlightAware
-      // If we have a fa_flight_id, query it directly — exact leg, no ambiguity
-      let fl = null;
-      if (faId) {
-        const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(faId)}`);
-        if (fa.statusCode === 200) {
-          const d = JSON.parse(fa.body);
-          fl = Array.isArray(d.flights) ? d.flights[0] : null;
-          // Validate it's the right flight
-          if (fl && fl.fa_flight_id && fl.fa_flight_id !== faId) fl = null;
-        }
-      }
+      // Query FlightAware — search by code then filter by exact route
+      const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(code)}?max_pages=1`);
+      if (fa.statusCode !== 200) { console.log(`[poller] FA error for ${code}`); continue; }
 
-      // Fallback: search by code, match by date
-      if (!fl) {
-        const fa = await fetchFA(`/aeroapi/flights/${encodeURIComponent(code)}?max_pages=1`);
-        if (fa.statusCode !== 200) {
-          console.log(`[poller] FA error ${fa.statusCode} for ${code}`);
-          continue;
-        }
-        const d = JSON.parse(fa.body);
-        const flights = d.flights || [];
-        // Match priority:
-        // 1. Exact fa_flight_id match
-        // 2. scheduled_out_utc match (most reliable for multi-leg same-day flights)
-        // 3. Date match fallback
-        // 4. Only flight if single result
-        fl = flights.find(f => faId && f.fa_flight_id === faId)
-          || (schedUtc ? flights.find(f => (f.scheduled_out || f.scheduled_off || '') === schedUtc) : null)
-          || flights.find(f => {
-               const depIso = f.scheduled_out || f.scheduled_off || f.actual_out || f.actual_off;
-               if (!depIso) return false;
-               const tz = tzOffset(f.origin?.timezone || 'Australia/Brisbane');
-               return toLocalDate(depIso, tz) === date;
-             })
-          || (flights.length === 1 ? flights[0] : null);
-      }
+      const faData  = JSON.parse(fa.body);
+      const flights = faData.flights || [];
+
+      // Find the leg matching our exact route (FROM → TO)
+      const fl = flights.find(f => {
+        const fFrom = (f.origin?.code_iata || f.origin?.code || '').toUpperCase();
+        const fTo   = (f.destination?.code_iata || f.destination?.code || '').toUpperCase();
+        return fFrom === from.toUpperCase() && fTo === to.toUpperCase();
+      });
 
       if (!fl) { console.log(`[poller] No FA match for ${key}`); continue; }
 
-      const depTz   = tzOffset(fl.origin?.timezone      || 'Australia/Brisbane');
-      const arrTz   = tzOffset(fl.destination?.timezone  || 'Australia/Brisbane');
-      const gotDep  = toLocalTime(fl.actual_out || fl.actual_off, depTz);
-      // Only use actual_in (gate arrival) — never actual_on (wheels down)
-      // This matches what FlightAware website displays
-      const gotArr  = toLocalTime(fl.actual_in, arrTz);
-      const useFaId = fl.fa_flight_id || faId;
+      const depTz  = tzOffset(fl.origin?.timezone      || 'Australia/Brisbane');
+      const arrTz  = tzOffset(fl.destination?.timezone  || 'Australia/Brisbane');
+      const gotDep = toLocalTime(fl.actual_out || fl.actual_off, depTz);
+      const gotArr = toLocalTime(fl.actual_in, arrTz); // gate arrival only
+      const useDate = toLocalDate(fl.scheduled_out || fl.scheduled_off || fl.actual_out, depTz) || date;
 
-      // Never overwrite a locked value with null
       const depToSave = gotDep || existing?.actual_dep || null;
       const arrToSave = gotArr || existing?.actual_arr || null;
 
       console.log(`[poller] ${key}: dep=${depToSave||'—'} arr=${arrToSave||'—'}`);
 
-      // Lock if we have new data
       const depIsNew = depToSave && depToSave !== existing?.actual_dep;
       const arrIsNew = arrToSave && arrToSave !== existing?.actual_arr;
 
       if (depIsNew || arrIsNew) {
         console.log(`[poller] LOCKING ${key}: dep=${depToSave} arr=${arrToSave||'pending'}`);
-        await sbRequest('DELETE', `actuals?${byCode}`, null);
+        await sbRequest('DELETE', `actuals?${filter}`, null);
         await sbRequest('POST', 'actuals', {
-          flight_code:  code,
-          flight_date:  date,
-          fa_flight_id: useFaId,
-          actual_dep:   depToSave,
-          actual_arr:   arrToSave || null,
-          updated_at:   new Date().toISOString()
+          flight_code: code,
+          flight_date: useDate,
+          route_from:  from,
+          route_to:    to,
+          actual_dep:  depToSave,
+          actual_arr:  arrToSave || null,
+          updated_at:  new Date().toISOString()
         });
       }
 
-      // Award winner if both times known
       if (depToSave && arrToSave) {
-        const routeFrom = fl.origin?.code_iata || fl.origin?.code || '';
-        const routeTo   = fl.destination?.code_iata || fl.destination?.code || '';
-        const routeFromCity = fl.origin?.city || '';
-        const routeToCity   = fl.destination?.city || '';
-        const schedDep  = toLocalTime(fl.scheduled_out || fl.scheduled_off, depTz) || '';
-        const schedArr  = toLocalTime(fl.scheduled_in  || fl.scheduled_on,  arrTz) || '';
-        await maybeAwardWinner(code, date, useFaId, depToSave, arrToSave, routeFrom, routeTo, routeFromCity, routeToCity, schedDep, schedArr);
+        const schedDep = toLocalTime(fl.scheduled_out || fl.scheduled_off, depTz) || '';
+        const schedArr = toLocalTime(fl.scheduled_in  || fl.scheduled_on,  arrTz) || '';
+        await maybeAwardWinner(
+          code, from, to, useDate, depToSave, arrToSave,
+          fl.origin?.city || '', fl.destination?.city || '',
+          schedDep, schedArr
+        );
       }
 
     } catch(e) {

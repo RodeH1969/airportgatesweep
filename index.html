@@ -928,7 +928,7 @@
       </div>
     </div>
     <div class="score-note">
-      Score = mins off gate dep + mins off gate arr. Lowest wins.
+      Guess the exact gate dep &amp; arr times to win!
     </div>
   </div>
 
@@ -1527,16 +1527,16 @@
       const arr = data.scheduled_arr || data.estimated_arr || '--:--';
 
       const flight = {
-        code:              q,
-        key:               data.flight_key || q,
-        date:              data.flight_date || '',
-        fa_flight_id:      data.fa_flight_id || '',
-        scheduled_out_utc: data.scheduled_out_utc || '',
-        from:              data.from,
-        to:                data.to,
+        code: q,
+        key:  data.flight_key || q,  // ZL6852_SYD_DBO
+        date: data.flight_date || '',
+        from: data.from || '',
+        to:   data.to   || '',
+        from_city: data.from_city || '',
+        to_city:   data.to_city   || '',
         dep,
         arr,
-        state:             data.state
+        state: data.state
       };
       showGame(flight);
 
@@ -1768,7 +1768,7 @@
       const r = await fetch(`/.netlify/functions/api/picks/${currentFlight.key || currentFlight.code}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dep: myDep, arr: myArr, seat, fa_flight_id: currentFlight.fa_flight_id || '', scheduled_out_utc: currentFlight.scheduled_out_utc || '' })
+        body: JSON.stringify({ dep: myDep, arr: myArr, seat, flight_date: currentFlight.date || '', from_city: currentFlight.from_city || '', to_city: currentFlight.to_city || '' })
       });
       if (r.status === 409) {
         const data = await r.json();
