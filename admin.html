@@ -436,6 +436,41 @@
             </div>`;
           }
 
+          if (w.noWinner || winnerObj.seat === 'NO_WINNER') {
+            return `<div class="wcard">
+              <div class="wcard-head">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <span style="font-weight:900;font-size:1rem;color:#f59e0b;">✈️ ${code}</span>
+                  ${date?`<span class="flight-date-badge">${date}</span>`:''}
+                  <span style="font-size:0.72rem;color:#64748b;">${entryCount} entries</span>
+                </div>
+                <div style="font-size:0.72rem;color:#64748b;text-align:right;">
+                  Actual: ${w.actualDep||'—'} → ${w.actualArr||'—'}<br>
+                  <span style="color:#475569;">${published}</span>
+                </div>
+              </div>
+              <div style="background:#1a1a2e;padding:16px 20px;text-align:center;">
+                <div style="font-size:2rem;margin-bottom:6px;">🎯</div>
+                <div style="font-family:system-ui;font-weight:900;color:#94a3b8;font-size:1.1rem;">No Exact Match</div>
+                <div style="font-size:0.8rem;color:#475569;margin-top:4px;">Nobody guessed the exact times this flight</div>
+                <div style="font-size:0.75rem;color:#10b981;margin-top:8px;">Actual: ${w.actualDep||'—'} dep · ${w.actualArr||'—'} arr</div>
+              </div>
+              <div class="wcard-scores">
+                <div style="font-size:0.65rem;color:#475569;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">All Entries</div>
+                <table style="width:100%;border-collapse:collapse;color:#e2e8f0;">
+                  <thead><tr style="color:#475569;font-size:0.65rem;text-transform:uppercase;">
+                    <th style="padding:4px 10px;text-align:left;">#</th>
+                    <th style="padding:4px 10px;text-align:left;">Seat</th>
+                    <th style="padding:4px 10px;text-align:left;">Dep Pick</th>
+                    <th style="padding:4px 10px;text-align:left;">Arr Pick</th>
+                    <th style="padding:4px 10px;text-align:left;">Score</th>
+                  </tr></thead>
+                  <tbody>${scoreRows}</tbody>
+                </table>
+              </div>
+            </div>`;
+          }
+
           const scoreRows = allScores.map((s,i) => `
             <tr style="${i===0?'background:rgba(124,58,237,0.08);':''}">
               <td style="padding:6px 10px;">${i===0?'🏆':i===1?'🥈':i===2?'🥉':i+1}</td>
