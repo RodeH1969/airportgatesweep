@@ -2096,10 +2096,11 @@
   }
 
   function renderResultsDates(winners) {
-    // Group by date
+    // Group by date — only use valid YYYY-MM-DD dates
     const byDate = {};
     winners.forEach(w => {
-      const d = w.flightDate || w.flightCode || '—';
+      const d = /^\d{4}-\d{2}-\d{2}$/.test(w.flightDate) ? w.flightDate : null;
+      if (!d) return; // skip entries with no valid date
       if (!byDate[d]) byDate[d] = [];
       byDate[d].push(w);
     });
