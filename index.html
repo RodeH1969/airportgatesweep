@@ -1036,6 +1036,16 @@
     🔒 Your boarding pass and mobile are only used to verify eligibility and contact winners.
   </div>
 
+  <!-- Sponsor ad space — destination based -->
+  <div id="sponsor-ad" style="margin:16px 0;border-radius:14px;overflow:hidden;display:none;">
+    <div style="background:#f0f7ff;border:1.5px solid #c8dff5;border-radius:14px;padding:16px;text-align:center;">
+      <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:8px;">Visiting <span id="ad-city"></span>?</div>
+      <div id="ad-content" style="min-height:80px;display:flex;align-items:center;justify-content:center;">
+        <div style="color:#64a0c8;font-size:0.85rem;font-style:italic;">Ad space — <span id="ad-city2"></span> sponsor</div>
+      </div>
+    </div>
+  </div>
+
   <button id="bp-proceed-btn" class="submit-btn" disabled onclick="submitEntry()">
     CONFIRM ENTRY ✈️
   </button>
@@ -1365,8 +1375,35 @@
         </button>
       </div>`;
 
-    // Redirect to live picks page for this flight
-    window.location.href = "/?flight=" + encodeURIComponent(currentFlight.key || currentFlight.code);
+    // Show confirmation page
+    showConfirmedPage();
+  }
+
+  function showConfirmedPage() {
+    // Fill in confirmation details
+    document.getElementById('conf-flight').textContent  = currentFlight.code || '';
+    document.getElementById('conf-route').textContent   = (currentFlight.from || '') + ' → ' + (currentFlight.to || '');
+    document.getElementById('conf-seat').textContent    = document.getElementById('bp-seat').textContent.trim();
+    document.getElementById('conf-dep').textContent     = myDep || '--:--';
+    document.getElementById('conf-arr').textContent     = myArr || '--:--';
+
+    // Show destination ad
+    const toCity = currentFlight.to_city || currentFlight.to || '';
+    const adEl = document.getElementById('conf-ad');
+    if (toCity) {
+      document.getElementById('conf-ad-city').textContent  = toCity;
+      document.getElementById('conf-ad-city2').textContent = toCity;
+      adEl.style.display = 'block';
+    } else {
+      adEl.style.display = 'none';
+    }
+
+    // Set up view picks button
+    document.getElementById('conf-picks-btn').onclick = function() {
+      window.location.href = '/?flight=' + encodeURIComponent(currentFlight.key || currentFlight.code);
+    };
+
+    showPage('page-confirmed');
   }
 
   function lockoutFlight(data) {
@@ -1814,6 +1851,13 @@
 
     setTimeout(() => {
       showPage('page-boarding');
+      // Show destination ad
+      const toCity = currentFlight.to_city || currentFlight.to || '';
+      if (toCity) {
+        document.getElementById('sponsor-ad').style.display = 'block';
+        document.getElementById('ad-city').textContent  = toCity;
+        document.getElementById('ad-city2').textContent = toCity;
+      }
     }, 400);
   }
 
@@ -1889,8 +1933,35 @@
       } catch(e) { console.error('Update error:', e); }
     }
 
-    // Redirect to live picks page for this flight
-    window.location.href = "/?flight=" + encodeURIComponent(currentFlight.key || currentFlight.code);
+    // Show confirmation page
+    showConfirmedPage();
+  }
+
+  function showConfirmedPage() {
+    // Fill in confirmation details
+    document.getElementById('conf-flight').textContent  = currentFlight.code || '';
+    document.getElementById('conf-route').textContent   = (currentFlight.from || '') + ' → ' + (currentFlight.to || '');
+    document.getElementById('conf-seat').textContent    = document.getElementById('bp-seat').textContent.trim();
+    document.getElementById('conf-dep').textContent     = myDep || '--:--';
+    document.getElementById('conf-arr').textContent     = myArr || '--:--';
+
+    // Show destination ad
+    const toCity = currentFlight.to_city || currentFlight.to || '';
+    const adEl = document.getElementById('conf-ad');
+    if (toCity) {
+      document.getElementById('conf-ad-city').textContent  = toCity;
+      document.getElementById('conf-ad-city2').textContent = toCity;
+      adEl.style.display = 'block';
+    } else {
+      adEl.style.display = 'none';
+    }
+
+    // Set up view picks button
+    document.getElementById('conf-picks-btn').onclick = function() {
+      window.location.href = '/?flight=' + encodeURIComponent(currentFlight.key || currentFlight.code);
+    };
+
+    showPage('page-confirmed');
   }
 
   // On load: check URL param ?flight=QF529 and show live picks page
@@ -2267,6 +2338,67 @@
     </div>
   </div>
 </div>
+
+
+<!-- CONFIRMED PAGE — shown after boarding pass submitted -->
+<section id="page-confirmed" class="page">
+  <div style="max-width:420px;margin:0 auto;padding:20px;">
+
+    <!-- Success header -->
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:3rem;margin-bottom:8px;">✅</div>
+      <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.6rem;color:#1e3a5f;">You're In!</div>
+      <div style="font-size:0.85rem;color:#64a0c8;margin-top:4px;">Your entry is locked. Good luck!</div>
+    </div>
+
+    <!-- Pick summary card -->
+    <div style="background:#fff;border:1.5px solid #c8dff5;border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:0 2px 12px rgba(37,99,235,0.08);">
+      <div style="background:#1e3a5f;padding:12px 16px;text-align:center;">
+        <div style="font-family:Nunito,sans-serif;font-weight:900;color:#f59e0b;font-size:1.1rem;">✈️ <span id="conf-flight"></span></div>
+        <div style="font-size:0.78rem;color:#93c5fd;margin-top:2px;" id="conf-route"></div>
+      </div>
+      <div style="padding:16px;">
+        <div style="display:flex;justify-content:space-around;text-align:center;gap:8px;">
+          <div>
+            <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;color:#64a0c8;margin-bottom:4px;">Seat</div>
+            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.6rem;color:#1e3a5f;" id="conf-seat"></div>
+          </div>
+          <div>
+            <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;color:#64a0c8;margin-bottom:4px;">🛫 Dep Guess</div>
+            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.6rem;color:#2563eb;" id="conf-dep"></div>
+          </div>
+          <div>
+            <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;color:#64a0c8;margin-bottom:4px;">🛬 Arr Guess</div>
+            <div style="font-family:Nunito,sans-serif;font-weight:900;font-size:1.6rem;color:#2563eb;" id="conf-arr"></div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:10px;background:#f0f7ff;border-radius:10px;text-align:center;font-size:0.78rem;color:#64a0c8;">
+          🎯 You need to match the exact gate times to win
+        </div>
+      </div>
+    </div>
+
+    <!-- Sponsor ad space -->
+    <div id="conf-ad" style="margin-bottom:16px;display:none;">
+      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#92400e;margin-bottom:8px;">Visiting <span id="conf-ad-city"></span>?</div>
+        <div style="min-height:100px;display:flex;align-items:center;justify-content:center;color:#92400e;font-size:0.85rem;font-style:italic;">
+          Ad space — <span id="conf-ad-city2"></span> sponsor
+        </div>
+      </div>
+    </div>
+
+    <!-- View picks button -->
+    <button id="conf-picks-btn" style="width:100%;padding:16px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
+      👀 View All Picks for This Flight
+    </button>
+
+    <button onclick="showPage('page-search')" style="width:100%;margin-top:10px;padding:14px;background:none;border:2px solid #c8dff5;color:#2563eb;font-family:Nunito,sans-serif;font-size:0.9rem;font-weight:900;border-radius:14px;cursor:pointer;">
+      ✈️ Enter Another Flight
+    </button>
+
+  </div>
+</section>
 
 </body>
 </html>
