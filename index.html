@@ -1387,13 +1387,76 @@
     document.getElementById('conf-dep').textContent     = myDep || '--:--';
     document.getElementById('conf-arr').textContent     = myArr || '--:--';
 
-    // Show destination ad
+    // Show destination-specific sponsor ad
+    const toCode = (currentFlight.to || '').toUpperCase();
     const toCity = currentFlight.to_city || currentFlight.to || '';
-    const adEl = document.getElementById('conf-ad');
-    if (toCity) {
-      document.getElementById('conf-ad-city').textContent  = toCity;
-      document.getElementById('conf-ad-city2').textContent = toCity;
+    const adEl   = document.getElementById('conf-ad');
+    const adInner = document.getElementById('conf-ad-inner');
+
+    // Sponsor ads by destination airport code
+    const sponsorAds = {
+      'DBO': {
+        img: '/zoodubbo.jpeg',
+        name: 'Taronga Western Plains Zoo',
+        tagline: 'Visit the wild side of Dubbo!',
+        url: 'https://taronga.org.au/western-plains-zoo',
+        bg: '#fff3e0',
+        border: '#ff6d00'
+      },
+      'BNE': {
+        img: '/Norman.png',
+        name: 'Norman Hotel',
+        tagline: "Brisbane's worst vegetarian restaurant ®",
+        url: 'https://www.normanhotel.com.au',
+        bg: '#1a0a00',
+        border: '#8B4513'
+      },
+      'RMA': {
+        img: '/roma.png',
+        name: 'Roma',
+        tagline: 'Come for the Bulls. Stay for the Steak.',
+        url: 'https://www.roma.qld.gov.au',
+        bg: '#0a0a0a',
+        border: '#8B4513'
+      },
+      'BHQ': {
+        img: '/Brokehill.png',
+        name: 'The Broken Hill Pub',
+        tagline: '"Broken Hill Proud"',
+        url: 'https://www.thebrokenhillpub.com.au',
+        bg: '#fff',
+        border: '#222'
+      },
+      'SYD': {
+        img: '/Sydney.jpg',
+        name: 'Heineken House',
+        tagline: 'Sydney Airport — Est. 1873',
+        url: 'https://www.heinekenhouse.com.au',
+        bg: '#006835',
+        border: '#004d28'
+      }
+    };
+
+    const ad = sponsorAds[toCode];
+    if (ad) {
       adEl.style.display = 'block';
+      adInner.innerHTML = \`
+        <a href="\${ad.url}" target="_blank" style="text-decoration:none;display:block;">
+          <div style="background:\${ad.bg};border:2px solid \${ad.border};border-radius:14px;padding:16px;text-align:center;">
+            <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#92400e;margin-bottom:10px;">Visiting \${toCity}?</div>
+            <img src="\${ad.img}" alt="\${ad.name}" style="max-height:120px;max-width:100%;object-fit:contain;margin-bottom:10px;">
+            <div style="font-family:Nunito,sans-serif;font-weight:900;color:#e65100;font-size:1rem;">\${ad.name}</div>
+            <div style="font-size:0.8rem;color:#bf360c;margin-top:4px;">\${ad.tagline}</div>
+            <div style="margin-top:10px;display:inline-block;background:#ff6d00;color:#fff;padding:6px 16px;border-radius:20px;font-family:Nunito,sans-serif;font-weight:900;font-size:0.8rem;">Find out more →</div>
+          </div>
+        </a>\`;
+    } else if (toCity) {
+      adEl.style.display = 'block';
+      adInner.innerHTML = \`
+        <div style="background:#f0f7ff;border:1.5px solid #c8dff5;border-radius:14px;padding:16px;text-align:center;">
+          <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:8px;">Visiting \${toCity}?</div>
+          <div style="color:#64a0c8;font-size:0.85rem;font-style:italic;padding:20px 0;">Ad space available — \${toCity}</div>
+        </div>\`;
     } else {
       adEl.style.display = 'none';
     }
@@ -1945,13 +2008,76 @@
     document.getElementById('conf-dep').textContent     = myDep || '--:--';
     document.getElementById('conf-arr').textContent     = myArr || '--:--';
 
-    // Show destination ad
+    // Show destination-specific sponsor ad
+    const toCode = (currentFlight.to || '').toUpperCase();
     const toCity = currentFlight.to_city || currentFlight.to || '';
-    const adEl = document.getElementById('conf-ad');
-    if (toCity) {
-      document.getElementById('conf-ad-city').textContent  = toCity;
-      document.getElementById('conf-ad-city2').textContent = toCity;
+    const adEl   = document.getElementById('conf-ad');
+    const adInner = document.getElementById('conf-ad-inner');
+
+    // Sponsor ads by destination airport code
+    const sponsorAds = {
+      'DBO': {
+        img: '/zoodubbo.jpeg',
+        name: 'Taronga Western Plains Zoo',
+        tagline: 'Visit the wild side of Dubbo!',
+        url: 'https://taronga.org.au/western-plains-zoo',
+        bg: '#fff3e0',
+        border: '#ff6d00'
+      },
+      'BNE': {
+        img: '/Norman.png',
+        name: 'Norman Hotel',
+        tagline: "Brisbane's worst vegetarian restaurant ®",
+        url: 'https://www.normanhotel.com.au',
+        bg: '#1a0a00',
+        border: '#8B4513'
+      },
+      'RMA': {
+        img: '/roma.png',
+        name: 'Roma',
+        tagline: 'Come for the Bulls. Stay for the Steak.',
+        url: 'https://www.roma.qld.gov.au',
+        bg: '#0a0a0a',
+        border: '#8B4513'
+      },
+      'BHQ': {
+        img: '/Brokehill.png',
+        name: 'The Broken Hill Pub',
+        tagline: '"Broken Hill Proud"',
+        url: 'https://www.thebrokenhillpub.com.au',
+        bg: '#fff',
+        border: '#222'
+      },
+      'SYD': {
+        img: '/Sydney.jpg',
+        name: 'Heineken House',
+        tagline: 'Sydney Airport — Est. 1873',
+        url: 'https://www.heinekenhouse.com.au',
+        bg: '#006835',
+        border: '#004d28'
+      }
+    };
+
+    const ad = sponsorAds[toCode];
+    if (ad) {
       adEl.style.display = 'block';
+      adInner.innerHTML = \`
+        <a href="\${ad.url}" target="_blank" style="text-decoration:none;display:block;">
+          <div style="background:\${ad.bg};border:2px solid \${ad.border};border-radius:14px;padding:16px;text-align:center;">
+            <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#92400e;margin-bottom:10px;">Visiting \${toCity}?</div>
+            <img src="\${ad.img}" alt="\${ad.name}" style="max-height:120px;max-width:100%;object-fit:contain;margin-bottom:10px;">
+            <div style="font-family:Nunito,sans-serif;font-weight:900;color:#e65100;font-size:1rem;">\${ad.name}</div>
+            <div style="font-size:0.8rem;color:#bf360c;margin-top:4px;">\${ad.tagline}</div>
+            <div style="margin-top:10px;display:inline-block;background:#ff6d00;color:#fff;padding:6px 16px;border-radius:20px;font-family:Nunito,sans-serif;font-weight:900;font-size:0.8rem;">Find out more →</div>
+          </div>
+        </a>\`;
+    } else if (toCity) {
+      adEl.style.display = 'block';
+      adInner.innerHTML = \`
+        <div style="background:#f0f7ff;border:1.5px solid #c8dff5;border-radius:14px;padding:16px;text-align:center;">
+          <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:8px;">Visiting \${toCity}?</div>
+          <div style="color:#64a0c8;font-size:0.85rem;font-style:italic;padding:20px 0;">Ad space available — \${toCity}</div>
+        </div>\`;
     } else {
       adEl.style.display = 'none';
     }
@@ -2381,12 +2507,7 @@
 
     <!-- Sponsor ad space -->
     <div id="conf-ad" style="margin-bottom:16px;display:none;">
-      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:16px;text-align:center;">
-        <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#92400e;margin-bottom:8px;">Visiting <span id="conf-ad-city"></span>?</div>
-        <div style="min-height:100px;display:flex;align-items:center;justify-content:center;color:#92400e;font-size:0.85rem;font-style:italic;">
-          Ad space — <span id="conf-ad-city2"></span> sponsor
-        </div>
-      </div>
+      <div id="conf-ad-inner" style="border-radius:14px;overflow:hidden;"></div>
     </div>
 
     <!-- View picks button -->
