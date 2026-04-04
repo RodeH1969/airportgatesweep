@@ -1039,9 +1039,7 @@
   <!-- Sponsor ad space — destination based -->
   <div id="sponsor-ad" style="margin:16px 0;border-radius:14px;overflow:hidden;display:none;">
     <div style="background:#f0f7ff;border:1.5px solid #c8dff5;border-radius:14px;padding:16px;text-align:center;">
-      <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:8px;">
-        Visiting <span id="ad-city"></span>?
-      </div>
+      <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:8px;">Visiting <span id="ad-city"></span>?</div>
       <div id="ad-content" style="min-height:80px;display:flex;align-items:center;justify-content:center;"></div>
     </div>
   </div>
@@ -1113,6 +1111,90 @@
   let locked = false;
   let boardingPassVerified = false;
   let bpMobileValid = false;
+
+
+  const CITY_SPONSOR_LOGOS = {
+    'dubbo': {
+      src: 'zoodubbo.jpg',
+      alt: 'Taronga Western Plains Zoo sponsor logo'
+    },
+    'sydney': {
+      src: 'Sydney.jpg',
+      alt: 'Heineken House Sydney Airport sponsor logo'
+    },
+    'brisbane': {
+      src: 'Norman.jpg',
+      alt: 'Norman Hotel sponsor logo'
+    },
+    'roma': {
+      src: 'roma.jpg',
+      alt: 'Roma sponsor logo'
+    },
+    'charleville': {
+      src: 'charleville.jpg',
+      alt: 'Hotel Corones Charleville sponsor logo'
+    },
+    'broken hill': {
+      src: 'Brokehill.jpg',
+      alt: 'The Broken Hill Pub sponsor logo'
+    },
+    'brokenhill': {
+      src: 'Brokehill.jpg',
+      alt: 'The Broken Hill Pub sponsor logo'
+    }
+  };
+
+  function normaliseSponsorCity(city) {
+    return String(city || '')
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function buildSponsorMarkup(city) {
+    const rawCity = String(city || '').trim();
+    const cityKey = normaliseSponsorCity(rawCity);
+    const sponsor = CITY_SPONSOR_LOGOS[cityKey];
+
+    if (!sponsor) {
+      return `
+        <div style="color:#64a0c8;font-size:0.85rem;font-style:italic;">
+          Ad space — ${rawCity || 'destination'} sponsor
+        </div>
+      `;
+    }
+
+    return `
+      <div style="display:flex;align-items:center;justify-content:center;width:100%;">
+        <img
+          src="${sponsor.src}"
+          alt="${sponsor.alt}"
+          style="max-width:100%;max-height:120px;width:auto;height:auto;display:block;object-fit:contain;border-radius:10px;background:#fff;padding:8px;"
+          loading="lazy"
+        >
+      </div>
+    `;
+  }
+
+  function renderDestinationSponsor(city, cityId, contentId, wrapperId) {
+    const rawCity = String(city || '').trim();
+    const wrapper = document.getElementById(wrapperId);
+    const cityEl = document.getElementById(cityId);
+    const contentEl = document.getElementById(contentId);
+
+    if (!wrapper || !cityEl || !contentEl) return;
+
+    if (!rawCity) {
+      wrapper.style.display = 'none';
+      contentEl.innerHTML = '';
+      return;
+    }
+
+    cityEl.textContent = rawCity;
+    contentEl.innerHTML = buildSponsorMarkup(rawCity);
+    wrapper.style.display = 'block';
+  }
 
   function showPage(id) {
     if (id === 'page-search') stopStatusPolling();
@@ -1846,11 +1928,7 @@
       showPage('page-boarding');
       // Show destination ad
       const toCity = currentFlight.to_city || currentFlight.to || '';
-      if (toCity) {
-        document.getElementById('sponsor-ad').style.display = 'block';
-        document.getElementById('ad-city').textContent  = toCity;
-        document.getElementById('ad-city2').textContent = toCity;
-      }
+      renderDestinationSponsor(toCity, 'ad-city', 'ad-content', 'sponsor-ad');
     }, 400);
   }
 
@@ -1940,7 +2018,14 @@
 
     // Show destination ad
     const toCity = currentFlight.to_city || currentFlight.to || '';
-    renderDestinationSponsor(toCity, 'conf-ad-city', 'conf-ad-content', 'conf-ad');
+    const adEl = document.getElementById('conf-ad');
+    if (toCity) {
+      document.getElementById('conf-ad-city').textContent  = toCity;
+      document.getElementById('conf-ad-city2').textContent = toCity;
+      adEl.style.display = 'block';
+    } else {
+      adEl.style.display = 'none';
+    }
 
     // Set up view picks button
     document.getElementById('conf-picks-btn').onclick = function() {
