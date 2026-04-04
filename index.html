@@ -1039,10 +1039,10 @@
   <!-- Sponsor ad space — destination based -->
   <div id="sponsor-ad" style="margin:16px 0;border-radius:14px;overflow:hidden;display:none;">
     <div style="background:#f0f7ff;border:1.5px solid #c8dff5;border-radius:14px;padding:16px;text-align:center;">
-      <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:8px;">Visiting <span id="ad-city"></span>?</div>
-      <div id="ad-content" style="min-height:80px;display:flex;align-items:center;justify-content:center;">
-        <div style="color:#64a0c8;font-size:0.85rem;font-style:italic;">Ad space — <span id="ad-city2"></span> sponsor</div>
+      <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:8px;">
+        Visiting <span id="ad-city"></span>?
       </div>
+      <div id="ad-content" style="min-height:80px;display:flex;align-items:center;justify-content:center;"></div>
     </div>
   </div>
 
@@ -1389,14 +1389,7 @@
 
     // Show destination ad
     const toCity = currentFlight.to_city || currentFlight.to || '';
-    const adEl = document.getElementById('conf-ad');
-    if (toCity) {
-      document.getElementById('conf-ad-city').textContent  = toCity;
-      document.getElementById('conf-ad-city2').textContent = toCity;
-      adEl.style.display = 'block';
-    } else {
-      adEl.style.display = 'none';
-    }
+    renderDestinationSponsor(toCity, 'conf-ad-city', 'conf-ad-content', 'conf-ad');
 
     // Set up view picks button
     document.getElementById('conf-picks-btn').onclick = function() {
@@ -1947,14 +1940,7 @@
 
     // Show destination ad
     const toCity = currentFlight.to_city || currentFlight.to || '';
-    const adEl = document.getElementById('conf-ad');
-    if (toCity) {
-      document.getElementById('conf-ad-city').textContent  = toCity;
-      document.getElementById('conf-ad-city2').textContent = toCity;
-      adEl.style.display = 'block';
-    } else {
-      adEl.style.display = 'none';
-    }
+    renderDestinationSponsor(toCity, 'conf-ad-city', 'conf-ad-content', 'conf-ad');
 
     // Set up view picks button
     document.getElementById('conf-picks-btn').onclick = function() {
