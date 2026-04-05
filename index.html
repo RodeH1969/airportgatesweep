@@ -1036,13 +1036,10 @@
     🔒 Your boarding pass and mobile are only used to verify eligibility and contact winners.
   </div>
 
-  <!-- Sponsor ad space — destination based -->
-  <div id="sponsor-ad" style="margin:16px 0;border-radius:14px;overflow:hidden;display:none;">
-    <div style="background:#f0f7ff;border:1.5px solid #c8dff5;border-radius:14px;padding:16px;text-align:center;">
-      <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:8px;">Visiting <span id="ad-city"></span>?</div>
-      <div id="ad-content" style="min-height:80px;display:flex;align-items:center;justify-content:center;">
-        <div style="color:#64a0c8;font-size:0.85rem;font-style:italic;">Ad space — <span id="ad-city2"></span> sponsor</div>
-      </div>
+  <!-- Sponsor ad space -->
+  <div id="sponsor-ad" style="margin:16px 0;border-radius:14px;overflow:hidden;display:block;">
+    <div style="background:#f0f7ff;border:1.5px solid #c8dff5;border-radius:14px;padding:8px;text-align:center;">
+      <img class="sponsor-rotator" src="Sydney.png" alt="Sponsor ad" style="display:block;width:100%;height:auto;border-radius:10px;">
     </div>
   </div>
 
@@ -1123,6 +1120,7 @@
 
   function buildFlightList() {
     const list = document.getElementById('flight-list');
+    if (!list) return;
     list.innerHTML = '';
     FLIGHTS.forEach(f => {
       const div = document.createElement('div');
@@ -1380,28 +1378,27 @@
   }
 
   function showConfirmedPage() {
-    // Fill in confirmation details
-    document.getElementById('conf-flight').textContent  = currentFlight.code || '';
-    document.getElementById('conf-route').textContent   = (currentFlight.from || '') + ' → ' + (currentFlight.to || '');
-    document.getElementById('conf-seat').textContent    = document.getElementById('bp-seat').textContent.trim();
-    document.getElementById('conf-dep').textContent     = myDep || '--:--';
-    document.getElementById('conf-arr').textContent     = myArr || '--:--';
+    const confFlight = document.getElementById('conf-flight');
+    const confRoute = document.getElementById('conf-route');
+    const confSeat = document.getElementById('conf-seat');
+    const confDep = document.getElementById('conf-dep');
+    const confArr = document.getElementById('conf-arr');
+    const bpSeat = document.getElementById('bp-seat');
+    const confAd = document.getElementById('conf-ad');
 
-    // Show destination ad
-    const toCity = currentFlight.to_city || currentFlight.to || '';
-    const adEl = document.getElementById('conf-ad');
-    if (toCity) {
-      document.getElementById('conf-ad-city').textContent  = toCity;
-      document.getElementById('conf-ad-city2').textContent = toCity;
-      adEl.style.display = 'block';
-    } else {
-      adEl.style.display = 'none';
+    if (confFlight) confFlight.textContent = currentFlight.code || '';
+    if (confRoute) confRoute.textContent = (currentFlight.from || '') + ' → ' + (currentFlight.to || '');
+    if (confSeat) confSeat.textContent = bpSeat ? bpSeat.textContent.trim() : '';
+    if (confDep) confDep.textContent = myDep || '--:--';
+    if (confArr) confArr.textContent = myArr || '--:--';
+    if (confAd) confAd.style.display = 'block';
+
+    const picksBtn = document.getElementById('conf-picks-btn');
+    if (picksBtn) {
+      picksBtn.onclick = function() {
+        window.location.href = '/?flight=' + encodeURIComponent(currentFlight.key || currentFlight.code);
+      };
     }
-
-    // Set up view picks button
-    document.getElementById('conf-picks-btn').onclick = function() {
-      window.location.href = '/?flight=' + encodeURIComponent(currentFlight.key || currentFlight.code);
-    };
 
     showPage('page-confirmed');
   }
@@ -1851,13 +1848,8 @@
 
     setTimeout(() => {
       showPage('page-boarding');
-      // Show destination ad
-      const toCity = currentFlight.to_city || currentFlight.to || '';
-      if (toCity) {
-        document.getElementById('sponsor-ad').style.display = 'block';
-        document.getElementById('ad-city').textContent  = toCity;
-        document.getElementById('ad-city2').textContent = toCity;
-      }
+      const sponsorAd = document.getElementById('sponsor-ad');
+      if (sponsorAd) sponsorAd.style.display = 'block';
     }, 400);
   }
 
@@ -2406,20 +2398,28 @@
 (function(){
   const sponsorImages = ['Sydney.png','Norman.png','roma.png','Brokehill.png','charleville.jpg'];
   let sponsorIndex = 0;
+  let sponsorTimer = null;
 
-  function updateSponsorAds(){
-    const ads = document.querySelectorAll('.sponsor-rotator');
-    if(!ads.length) return;
-    ads.forEach((img, i) => {
-      img.src = sponsorImages[(sponsorIndex + i) % sponsorImages.length];
+  function paintSponsorAds(){
+    const imgs = document.querySelectorAll('.sponsor-rotator');
+    if (!imgs.length) return;
+    imgs.forEach((img, offset) => {
+      img.src = sponsorImages[(sponsorIndex + offset) % sponsorImages.length];
     });
     sponsorIndex = (sponsorIndex + 1) % sponsorImages.length;
   }
 
-  document.addEventListener('DOMContentLoaded', function(){
-    updateSponsorAds();
-    setInterval(updateSponsorAds, 2500);
-  });
+  function startSponsorRotation(){
+    paintSponsorAds();
+    if (sponsorTimer) clearInterval(sponsorTimer);
+    sponsorTimer = setInterval(paintSponsorAds, 2500);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startSponsorRotation);
+  } else {
+    startSponsorRotation();
+  }
 })();
 </script>
 </body>
