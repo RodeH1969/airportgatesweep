@@ -1848,13 +1848,9 @@
 
     setTimeout(() => {
       showPage('page-boarding');
-      // Show destination ad
-      const toCity = currentFlight.to_city || currentFlight.to || '';
-      if (toCity) {
-        document.getElementById('sponsor-ad').style.display = 'block';
-        document.getElementById('ad-city').textContent  = toCity;
-        document.getElementById('ad-city2').textContent = toCity;
-      }
+      // Always show Sydney sponsor ad
+      const sponsorAd = document.getElementById('sponsor-ad');
+      if (sponsorAd) sponsorAd.style.display = 'block';
     }, 400);
   }
 
