@@ -755,10 +755,7 @@
       font-weight: 600;
       line-height: 1.5;
     }
-  
-  .sponsor-img{max-width:240px;width:100%;height:auto;display:block;border-radius:12px;background:#fff}
-  .sponsor-fallback{color:#9a3412;font-size:0.95rem;font-weight:900;text-align:center}
-</style>
+  </style>
 </head>
 <body>
 
@@ -1110,119 +1107,12 @@
     { code: 'VA948', from: 'SYD', to: 'BNE', dep: '15:20', arr: '16:50' }
   ];
 
-    let currentFlight = null;
+  let currentFlight = null;
   let myDep = null;
   let myArr = null;
   let locked = false;
   let boardingPassVerified = false;
   let bpMobileValid = false;
-
-  const CITY_SPONSORS = {
-    dubbo: {
-      cityLabel: 'Dubbo',
-      img: 'zoodubbo.jpeg',
-      alt: 'Taronga Western Plains Zoo sponsor logo',
-      href: 'https://taronga.org.au/dubbo-zoo'
-    },
-    sydney: {
-      cityLabel: 'Sydney',
-      img: 'Sydney.jpg',
-      alt: 'Heineken House Sydney Airport sponsor logo'
-    },
-    brisbane: {
-      cityLabel: 'Brisbane',
-      img: 'Norman.png',
-      alt: 'Norman Hotel sponsor logo'
-    },
-    roma: {
-      cityLabel: 'Roma',
-      img: 'roma.png',
-      alt: 'Roma sponsor logo'
-    },
-    'broken hill': {
-      cityLabel: 'Broken Hill',
-      img: 'Brokehill.png',
-      alt: 'The Broken Hill Pub sponsor logo'
-    },
-    charleville: {
-      cityLabel: 'Charleville',
-      img: 'charleville.jpg',
-      alt: 'Charleville sponsor logo'
-    }
-  };
-
-  function normaliseSponsorCity(city) {
-    return String(city || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  }
-
-  function getSponsorForCity(city) {
-    return CITY_SPONSORS[normaliseSponsorCity(city)] || null;
-  }
-
-  function buildSponsorHtml(sponsor) {
-    if (!sponsor) return '';
-
-    const imgHtml = `
-      <img
-        src="${sponsor.img}"
-        alt="${sponsor.alt || sponsor.cityLabel + ' sponsor logo'}"
-        style="max-width:100%; max-height:90px; object-fit:contain; display:block; margin:0 auto;"
-        onerror="this.closest('[data-sponsor-wrap]').style.display='none'"
-      />
-    `;
-
-    if (sponsor.href) {
-      return `
-        <div data-sponsor-wrap>
-          <a href="${sponsor.href}" target="_blank" rel="noopener noreferrer" style="display:block;">
-            ${imgHtml}
-          </a>
-        </div>
-      `;
-    }
-
-    return `<div data-sponsor-wrap>${imgHtml}</div>`;
-  }
-
-  function renderDestinationSponsor(city, options = {}) {
-    const sponsor = getSponsorForCity(city);
-    const target = options.target || 'both';
-
-    const renderBoarding = target === 'both' || target === 'boarding';
-    const renderConfirmed = target === 'both' || target === 'confirmed';
-
-    if (renderBoarding) {
-      const sponsorAd = document.getElementById('sponsor-ad');
-      const adCity = document.getElementById('ad-city');
-      const adCity2 = document.getElementById('ad-city2');
-      const adContent = document.getElementById('ad-content');
-
-      if (!sponsor) {
-        if (sponsorAd) sponsorAd.style.display = 'none';
-      } else {
-        if (adCity) adCity.textContent = sponsor.cityLabel;
-        if (adCity2) adCity2.textContent = sponsor.cityLabel;
-        if (adContent) adContent.innerHTML = buildSponsorHtml(sponsor);
-        if (sponsorAd) sponsorAd.style.display = 'block';
-      }
-    }
-
-    if (renderConfirmed) {
-      const confAd = document.getElementById('conf-ad');
-      const confAdCity = document.getElementById('conf-ad-city');
-      const confAdCity2 = document.getElementById('conf-ad-city2');
-      const confAdContent = document.getElementById('conf-ad-content');
-
-      if (!sponsor) {
-        if (confAd) confAd.style.display = 'none';
-      } else {
-        if (confAdCity) confAdCity.textContent = sponsor.cityLabel;
-        if (confAdCity2) confAdCity2.textContent = sponsor.cityLabel;
-        if (confAdContent) confAdContent.innerHTML = buildSponsorHtml(sponsor);
-        if (confAd) confAd.style.display = 'block';
-      }
-    }
-  }
 
   function showPage(id) {
     if (id === 'page-search') stopStatusPolling();
@@ -1498,8 +1388,15 @@
     document.getElementById('conf-arr').textContent     = myArr || '--:--';
 
     // Show destination ad
-    const toCity = currentFlight.to_city || currentFlight.tocity || currentFlight.to || '';
-    renderDestinationSponsor('conf', toCity);
+    const toCity = currentFlight.to_city || currentFlight.to || '';
+    const adEl = document.getElementById('conf-ad');
+    if (toCity) {
+      document.getElementById('conf-ad-city').textContent  = toCity;
+      document.getElementById('conf-ad-city2').textContent = toCity;
+      adEl.style.display = 'block';
+    } else {
+      adEl.style.display = 'none';
+    }
 
     // Set up view picks button
     document.getElementById('conf-picks-btn').onclick = function() {
@@ -1952,11 +1849,15 @@
 
     showToast('Locked 🔒 Now verify to enter');
 
-       setTimeout(() => {
+    setTimeout(() => {
       showPage('page-boarding');
       // Show destination ad
       const toCity = currentFlight.to_city || currentFlight.to || '';
-      renderDestinationSponsor(toCity, { target: 'boarding' });
+      if (toCity) {
+        document.getElementById('sponsor-ad').style.display = 'block';
+        document.getElementById('ad-city').textContent  = toCity;
+        document.getElementById('ad-city2').textContent = toCity;
+      }
     }, 400);
   }
 
@@ -2046,7 +1947,15 @@
 
     // Show destination ad
     const toCity = currentFlight.to_city || currentFlight.to || '';
-    renderDestinationSponsor(toCity, { target: 'confirmed' });
+    const adEl = document.getElementById('conf-ad');
+    if (toCity) {
+      document.getElementById('conf-ad-city').textContent  = toCity;
+      document.getElementById('conf-ad-city2').textContent = toCity;
+      adEl.style.display = 'block';
+    } else {
+      adEl.style.display = 'none';
+    }
+
     // Set up view picks button
     document.getElementById('conf-picks-btn').onclick = function() {
       window.location.href = '/?flight=' + encodeURIComponent(currentFlight.key || currentFlight.code);
