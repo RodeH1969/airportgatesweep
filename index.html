@@ -2371,16 +2371,6 @@
       </div>
     </div>
 
-    <!-- Sponsor ad space -->
-    <div id="conf-ad" style="margin-bottom:16px;display:none;">
-      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:16px;text-align:center;">
-        <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#92400e;margin-bottom:8px;">Visiting <span id="conf-ad-city"></span>?</div>
-        <div style="min-height:100px;display:flex;align-items:center;justify-content:center;color:#92400e;font-size:0.85rem;font-style:italic;">
-          Ad space — <span id="conf-ad-city2"></span> sponsor
-        </div>
-      </div>
-    </div>
-
     <!-- View picks button -->
     <button id="conf-picks-btn" style="width:100%;padding:16px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
       👀 View All Picks for This Flight
@@ -2392,35 +2382,5 @@
 
   </div>
 </section>
-
-
-<script>
-(function(){
-  const sponsorImages = ['Sydney.png','Norman.png','roma.png','Brokehill.png','charleville.jpg'];
-  let sponsorIndex = 0;
-  let sponsorTimer = null;
-
-  function paintSponsorAds(){
-    const imgs = document.querySelectorAll('.sponsor-rotator');
-    if (!imgs.length) return;
-    imgs.forEach((img, offset) => {
-      img.src = sponsorImages[(sponsorIndex + offset) % sponsorImages.length];
-    });
-    sponsorIndex = (sponsorIndex + 1) % sponsorImages.length;
-  }
-
-  function startSponsorRotation(){
-    paintSponsorAds();
-    if (sponsorTimer) clearInterval(sponsorTimer);
-    sponsorTimer = setInterval(paintSponsorAds, 2500);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startSponsorRotation);
-  } else {
-    startSponsorRotation();
-  }
-})();
-</script>
 </body>
 </html>
