@@ -1101,11 +1101,7 @@
 
 <div id="toast" class="toast">Toast</div>
 <script>
-  if (window.location.protocol === 'file:') {
-      console.warn('This app should be run from a web server, not opened via file://. Use Netlify, localhost, or a simple local server.');
-    }
-
-    const FLIGHTS = [
+  const FLIGHTS = [
     { code: 'QF531', from: 'BNE', to: 'SYD', dep: '07:00', arr: '09:30' },
     { code: 'QF732', from: 'BNE', to: 'MEL', dep: '10:15', arr: '12:50' },
     { code: 'VA948', from: 'SYD', to: 'BNE', dep: '15:20', arr: '16:50' }
@@ -1394,12 +1390,12 @@
     // Show destination ad
     const toCity = currentFlight.to_city || currentFlight.to || '';
     const adEl = document.getElementById('conf-ad');
-    if (toCity) {
+    
       document.getElementById('conf-ad-city').textContent  = toCity;
-      document.getElementById('conf-ad-city2').textContent = toCity;
+      
       adEl.style.display = 'block';
-    } else {
-      adEl.style.display = 'none';
+    
+      
     }
 
     // Set up view picks button
@@ -1703,7 +1699,7 @@
         btn.className = 'time-btn taken-btn' + (isCatchall ? ' catchall-btn' : '');
         btn.innerHTML = `<span class="taken-time">${t}</span><span class="taken-seat">${takenBy}</span>`;
         btn.disabled = true;
-      } else {
+      
         btn.className = 'time-btn' + (isCatchall ? ' catchall-btn' : '');
         btn.textContent = t;
         if (t === scheduled && !isCatchall) btn.classList.add('scheduled-marker');
@@ -1763,7 +1759,7 @@
     if (type === 'dep') {
       myDep = time;
       document.getElementById('ps-dep').textContent = time;
-    } else {
+    
       myArr = time;
       document.getElementById('ps-arr').textContent = time;
     }
@@ -1781,7 +1777,7 @@
     const hasAll = myDep && myArr && seat.length >= 2;
     if (hasAll) {
       document.getElementById('pick-summary').classList.add('show');
-    } else {
+    
       document.getElementById('pick-summary').classList.remove('show');
     }
     document.getElementById('lock-btn').disabled = !hasAll;
@@ -1857,7 +1853,7 @@
       showPage('page-boarding');
       // Show destination ad
       const toCity = currentFlight.to_city || currentFlight.to || '';
-      if (toCity) {
+      
         document.getElementById('sponsor-ad').style.display = 'block';
         document.getElementById('ad-city').textContent  = toCity;
         document.getElementById('ad-city2').textContent = toCity;
@@ -1903,7 +1899,7 @@
     } else if (raw.length === 9 && raw.startsWith('4')) {
       bpMobileValid = true;
       err.style.display = 'none';
-    } else {
+    
       bpMobileValid = false;
       err.style.display = 'block';
     }
@@ -1952,12 +1948,12 @@
     // Show destination ad
     const toCity = currentFlight.to_city || currentFlight.to || '';
     const adEl = document.getElementById('conf-ad');
-    if (toCity) {
+    
       document.getElementById('conf-ad-city').textContent  = toCity;
-      document.getElementById('conf-ad-city2').textContent = toCity;
+      
       adEl.style.display = 'block';
-    } else {
-      adEl.style.display = 'none';
+    
+      
     }
 
     // Set up view picks button
@@ -2384,16 +2380,10 @@
     </div>
 
     <!-- Sponsor ad space -->
-    <div id="conf-ad" style="margin-bottom:16px;display:none;">
-      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:16px;text-align:center;">
-        <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#92400e;margin-bottom:8px;">Visiting <span id="conf-ad-city"></span>?</div>
-        <div style="min-height:100px;display:flex;align-items:center;justify-content:center;color:#92400e;font-size:0.85rem;font-style:italic;">
-          Ad space — <span id="conf-ad-city2"></span> sponsor
-        </div>
+    <div id="conf-ad" style="margin-bottom:16px;display:block;border-radius:14px;overflow:hidden;">
+        <img src="Sydney.jpg" alt="Sydney Airport sponsor ad" style="display:block;width:100%;height:auto;border-radius:14px;">
       </div>
-    </div>
-
-    <!-- View picks button -->
+      <!-- View picks button -->
     <button id="conf-picks-btn" style="width:100%;padding:16px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
       👀 View All Picks for This Flight
     </button>
