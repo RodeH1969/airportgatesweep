@@ -1122,32 +1122,25 @@
   }
 
   function buildFlightList() {
-    const list = document.getElementById('flight-list');
-    list.innerHTML = '';
-    FLIGHTS.forEach(f => {
-      const div = document.createElement('div');
-      div.className = 'flight-card';
-      div.onclick = () => showGame(f);
-
-      div.innerHTML = `
-        <div class="fc-left">
-          <div class="fc-route">${f.from} → ${f.to}</div>
-          <div class="fc-num">${f.code}</div>
-        </div>
-        <div class="fc-times">
-          <div class="fc-t">
-            <div class="fc-tl">Dep</div>
-            <div class="fc-tv">${f.dep}</div>
+      const list = document.getElementById('flight-list');
+      if (!list) return;
+      list.innerHTML = '';
+      FLIGHTS.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'flight-card';
+        div.onclick = () => showGame(f);
+        div.innerHTML = `
+          <div class="fc-left">
+            <div class="fc-route">${f.from} → ${f.to}</div>
+            <div class="fc-num">${f.code}</div>
           </div>
-          <div class="fc-t">
-            <div class="fc-tl">Arr</div>
-            <div class="fc-tv">${f.arr}</div>
-          </div>
-        </div>
-      `;
-      list.appendChild(div);
-    });
-  }
+          <div class="fc-times">
+            <div class="fc-t"><div class="fc-tl">Dep</div><div class="fc-tv">${f.dep}</div></div>
+            <div class="fc-t"><div class="fc-tl">Arr</div><div class="fc-tv">${f.arr}</div></div>
+          </div>`;
+        list.appendChild(div);
+      });
+    }
 
   const FA_KEY = 'rdqRteiLRjx3W113fMI6dLux7JzAHWeU';
   let statusPollTimer = null;
@@ -1380,21 +1373,30 @@
   }
 
   function showConfirmedPage() {
-      document.getElementById('conf-flight').textContent = currentFlight.code;
-      document.getElementById('conf-route').textContent = `${currentFlight.from} → ${currentFlight.to}`;
-      document.getElementById('conf-seat').textContent = document.getElementById('bp-seat').textContent.trim();
-      document.getElementById('conf-dep').textContent = myDep || '----';
-      document.getElementById('conf-arr').textContent = myArr || '----';
+    const confFlight = document.getElementById('conf-flight');
+    const confRoute = document.getElementById('conf-route');
+    const confSeat = document.getElementById('conf-seat');
+    const confDep = document.getElementById('conf-dep');
+    const confArr = document.getElementById('conf-arr');
+    const bpSeat = document.getElementById('bp-seat');
+    const adEl = document.getElementById('conf-ad');
+    const confPicksBtn = document.getElementById('conf-picks-btn');
 
-      const adEl = document.getElementById('conf-ad');
-      if (adEl) adEl.style.display = 'block';
+    if (confFlight) confFlight.textContent = currentFlight?.code || '';
+    if (confRoute) confRoute.textContent = currentFlight ? `${currentFlight.from} → ${currentFlight.to}` : '';
+    if (confSeat) confSeat.textContent = bpSeat ? bpSeat.textContent.trim() : '--';
+    if (confDep) confDep.textContent = myDep || '----';
+    if (confArr) confArr.textContent = myArr || '----';
+    if (adEl) adEl.style.display = 'block';
 
-      document.getElementById('conf-picks-btn').onclick = function() {
-        window.location.href = `?flight=${encodeURIComponent(currentFlight.key || currentFlight.code)}`;
+    if (confPicksBtn) {
+      confPicksBtn.onclick = function() {
+        window.location.href = '/?flight=' + encodeURIComponent((currentFlight && (currentFlight.key || currentFlight.code)) || '');
       };
-
-      showPage('page-confirmed');
     }
+
+    showPage('page-confirmed');
+  }
 
   function lockoutFlight(data) {
     stopStatusPolling();
@@ -2370,10 +2372,16 @@
     </div>
 
     <!-- Sponsor ad space -->
-    <div id="conf-ad" style="margin-bottom:16px;display:block;border-radius:14px;overflow:hidden;">
-        <img src="Sydney.jpg" alt="Sydney Airport sponsor ad" style="display:block;width:100%;height:auto;border-radius:14px;">
+    <div id="conf-ad" style="margin-bottom:16px;display:none;">
+      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#92400e;margin-bottom:8px;">Visiting <span id="conf-ad-city"></span>?</div>
+        <div style="min-height:100px;display:flex;align-items:center;justify-content:center;color:#92400e;font-size:0.85rem;font-style:italic;">
+          Ad space — <span id="conf-ad-city2"></span> sponsor
+        </div>
       </div>
-      <!-- View picks button -->
+    </div>
+
+    <!-- View picks button -->
     <button id="conf-picks-btn" style="width:100%;padding:16px;background:#2563eb;border:none;color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:900;border-radius:14px;cursor:pointer;">
       👀 View All Picks for This Flight
     </button>
@@ -2387,8 +2395,3 @@
 
 </body>
 </html>
-<script>
-window.showRulesPopup = window.showRulesPopup || function(){ var p=document.getElementById('rules-popup'); if(p) p.style.display='flex'; };
-window.hideRulesPopup = window.hideRulesPopup || function(){ var p=document.getElementById('rules-popup'); if(p) p.style.display='none'; };
-window.filterFlights = window.filterFlights || function(){ var input=document.getElementById('flight-search'); if(!input) return; var q=(input.value||'').trim().toUpperCase(); var cards=document.querySelectorAll('#flight-list .flight-card'); cards.forEach(function(card){ var txt=(card.textContent||'').toUpperCase(); card.style.display = (!q || txt.includes(q)) ? '' : 'none'; }); };
-</script>
