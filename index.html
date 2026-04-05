@@ -1039,7 +1039,7 @@
   <!-- Sponsor ad space -->
   <div id="sponsor-ad" style="margin:16px 0;border-radius:14px;overflow:hidden;display:block;">
     <div style="background:#f0f7ff;border:1.5px solid #c8dff5;border-radius:14px;padding:8px;text-align:center;">
-      <img src="Sydney.jpg" alt="Sydney Airport sponsor ad" style="display:block;width:100%;height:auto;border-radius:10px;" loading="lazy">
+      <img src="Sydney.png" alt="Sydney Airport sponsor ad" style="display:block;width:100%;height:auto;border-radius:10px;">
     </div>
   </div>
 
@@ -1120,6 +1120,7 @@
 
   function buildFlightList() {
     const list = document.getElementById('flight-list');
+    if (!list) return;
     list.innerHTML = '';
     FLIGHTS.forEach(f => {
       const div = document.createElement('div');
@@ -1378,11 +1379,17 @@
 
   function showConfirmedPage() {
     // Fill in confirmation details
-    document.getElementById('conf-flight').textContent  = currentFlight.code || '';
-    document.getElementById('conf-route').textContent   = (currentFlight.from || '') + ' → ' + (currentFlight.to || '');
-    document.getElementById('conf-seat').textContent    = document.getElementById('bp-seat').textContent.trim();
-    document.getElementById('conf-dep').textContent     = myDep || '--:--';
-    document.getElementById('conf-arr').textContent     = myArr || '--:--';
+    const confFlight = document.getElementById('conf-flight');
+    const confRoute = document.getElementById('conf-route');
+    const confSeat = document.getElementById('conf-seat');
+    const confDep = document.getElementById('conf-dep');
+    const confArr = document.getElementById('conf-arr');
+    const bpSeat = document.getElementById('bp-seat');
+    if (confFlight) confFlight.textContent = currentFlight.code || '';
+    if (confRoute) confRoute.textContent = (currentFlight.from || '') + ' → ' + (currentFlight.to || '');
+    if (confSeat) confSeat.textContent = bpSeat ? bpSeat.textContent.trim() : '';
+    if (confDep) confDep.textContent = myDep || '--:--';
+    if (confArr) confArr.textContent = myArr || '--:--';
 
     // Always show Sydney sponsor ad
     const adEl = document.getElementById('conf-ad');
@@ -1929,11 +1936,17 @@
 
   function showConfirmedPage() {
     // Fill in confirmation details
-    document.getElementById('conf-flight').textContent  = currentFlight.code || '';
-    document.getElementById('conf-route').textContent   = (currentFlight.from || '') + ' → ' + (currentFlight.to || '');
-    document.getElementById('conf-seat').textContent    = document.getElementById('bp-seat').textContent.trim();
-    document.getElementById('conf-dep').textContent     = myDep || '--:--';
-    document.getElementById('conf-arr').textContent     = myArr || '--:--';
+    const confFlight = document.getElementById('conf-flight');
+    const confRoute = document.getElementById('conf-route');
+    const confSeat = document.getElementById('conf-seat');
+    const confDep = document.getElementById('conf-dep');
+    const confArr = document.getElementById('conf-arr');
+    const bpSeat = document.getElementById('bp-seat');
+    if (confFlight) confFlight.textContent = currentFlight.code || '';
+    if (confRoute) confRoute.textContent = (currentFlight.from || '') + ' → ' + (currentFlight.to || '');
+    if (confSeat) confSeat.textContent = bpSeat ? bpSeat.textContent.trim() : '';
+    if (confDep) confDep.textContent = myDep || '--:--';
+    if (confArr) confArr.textContent = myArr || '--:--';
 
     // Always show Sydney sponsor ad
     const adEl = document.getElementById('conf-ad');
