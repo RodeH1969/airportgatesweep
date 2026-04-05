@@ -1380,31 +1380,21 @@
   }
 
   function showConfirmedPage() {
-    // Fill in confirmation details
-    document.getElementById('conf-flight').textContent  = currentFlight.code || '';
-    document.getElementById('conf-route').textContent   = (currentFlight.from || '') + ' → ' + (currentFlight.to || '');
-    document.getElementById('conf-seat').textContent    = document.getElementById('bp-seat').textContent.trim();
-    document.getElementById('conf-dep').textContent     = myDep || '--:--';
-    document.getElementById('conf-arr').textContent     = myArr || '--:--';
+      document.getElementById('conf-flight').textContent = currentFlight.code;
+      document.getElementById('conf-route').textContent = `${currentFlight.from} → ${currentFlight.to}`;
+      document.getElementById('conf-seat').textContent = document.getElementById('bp-seat').textContent.trim();
+      document.getElementById('conf-dep').textContent = myDep || '----';
+      document.getElementById('conf-arr').textContent = myArr || '----';
 
-    // Show destination ad
-    const toCity = currentFlight.to_city || currentFlight.to || '';
-    const adEl = document.getElementById('conf-ad');
-    
-      document.getElementById('conf-ad-city').textContent  = toCity;
-      
-      adEl.style.display = 'block';
-    
-      
+      const adEl = document.getElementById('conf-ad');
+      if (adEl) adEl.style.display = 'block';
+
+      document.getElementById('conf-picks-btn').onclick = function() {
+        window.location.href = `?flight=${encodeURIComponent(currentFlight.key || currentFlight.code)}`;
+      };
+
+      showPage('page-confirmed');
     }
-
-    // Set up view picks button
-    document.getElementById('conf-picks-btn').onclick = function() {
-      window.location.href = '/?flight=' + encodeURIComponent(currentFlight.key || currentFlight.code);
-    };
-
-    showPage('page-confirmed');
-  }
 
   function lockoutFlight(data) {
     stopStatusPolling();
@@ -1699,7 +1689,7 @@
         btn.className = 'time-btn taken-btn' + (isCatchall ? ' catchall-btn' : '');
         btn.innerHTML = `<span class="taken-time">${t}</span><span class="taken-seat">${takenBy}</span>`;
         btn.disabled = true;
-      
+      } else {
         btn.className = 'time-btn' + (isCatchall ? ' catchall-btn' : '');
         btn.textContent = t;
         if (t === scheduled && !isCatchall) btn.classList.add('scheduled-marker');
@@ -1759,7 +1749,7 @@
     if (type === 'dep') {
       myDep = time;
       document.getElementById('ps-dep').textContent = time;
-    
+    } else {
       myArr = time;
       document.getElementById('ps-arr').textContent = time;
     }
@@ -1777,7 +1767,7 @@
     const hasAll = myDep && myArr && seat.length >= 2;
     if (hasAll) {
       document.getElementById('pick-summary').classList.add('show');
-    
+    } else {
       document.getElementById('pick-summary').classList.remove('show');
     }
     document.getElementById('lock-btn').disabled = !hasAll;
@@ -1853,7 +1843,7 @@
       showPage('page-boarding');
       // Show destination ad
       const toCity = currentFlight.to_city || currentFlight.to || '';
-      
+      if (toCity) {
         document.getElementById('sponsor-ad').style.display = 'block';
         document.getElementById('ad-city').textContent  = toCity;
         document.getElementById('ad-city2').textContent = toCity;
@@ -1899,7 +1889,7 @@
     } else if (raw.length === 9 && raw.startsWith('4')) {
       bpMobileValid = true;
       err.style.display = 'none';
-    
+    } else {
       bpMobileValid = false;
       err.style.display = 'block';
     }
@@ -1948,12 +1938,12 @@
     // Show destination ad
     const toCity = currentFlight.to_city || currentFlight.to || '';
     const adEl = document.getElementById('conf-ad');
-    
+    if (toCity) {
       document.getElementById('conf-ad-city').textContent  = toCity;
-      
+      document.getElementById('conf-ad-city2').textContent = toCity;
       adEl.style.display = 'block';
-    
-      
+    } else {
+      adEl.style.display = 'none';
     }
 
     // Set up view picks button
@@ -2397,3 +2387,8 @@
 
 </body>
 </html>
+<script>
+window.showRulesPopup = window.showRulesPopup || function(){ var p=document.getElementById('rules-popup'); if(p) p.style.display='flex'; };
+window.hideRulesPopup = window.hideRulesPopup || function(){ var p=document.getElementById('rules-popup'); if(p) p.style.display='none'; };
+window.filterFlights = window.filterFlights || function(){ var input=document.getElementById('flight-search'); if(!input) return; var q=(input.value||'').trim().toUpperCase(); var cards=document.querySelectorAll('#flight-list .flight-card'); cards.forEach(function(card){ var txt=(card.textContent||'').toUpperCase(); card.style.display = (!q || txt.includes(q)) ? '' : 'none'; }); };
+</script>
